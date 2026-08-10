@@ -7,3 +7,33 @@
 /* Ajustes estruturais da primeira rodada: catálogo é a porta de entrada; áreas protegidas ganham acesso próprio; gestor recebe densidade administrativa. */
 .protected-entry{background:var(--cream);min-height:100vh;padding-bottom:0}.protected-mark{padding:26px 20px 18px;display:flex;align-items:center;gap:10px;background:var(--paper);border-bottom:1px solid var(--line)}.protected-mark img{width:38px;height:38px}.protected-mark span{font-family:'Fraunces';font-size:18px;color:var(--terracotta)}.protected-entry .page{padding-top:38px}.protected-entry .page>h1{max-width:290px}.protected-entry .page>p{max-width:320px}.protected-back{margin:20px auto 0;display:flex}.protected-entry .demo-note{display:block;text-align:center;margin-top:30px}.manager-entry{--terracotta:#8e5d43;background:#f8f7f3}.manager-entry .protected-mark{background:#292721;color:#fff;border-color:#292721}.manager-entry .protected-mark span{color:#f4d594}.manager-entry .btn-primary{background:#8e5d43}.manager .metric-grid{gap:7px;margin:17px 0 12px}.manager .metric{min-height:76px;padding:10px;border-radius:11px}.manager .metric b{font-size:18px;margin:7px 0 3px}.manager .metric span,.manager .metric small{font-size:9px}.manager .dashboard-card,.manager .report-big,.manager .report-card,.manager .settings-card{border-radius:12px;padding:12px}.manager .dashboard-card .section-head{margin-bottom:4px}.manager .bars{height:112px;padding-top:10px}.manager .bars i{width:19px}.manager .split-cards{gap:7px;margin-top:8px}.manager .split-cards>div{padding:10px;border-radius:11px}.manager .split-cards b{font-size:12px;margin-top:6px}.manager .manager-row{padding:8px;border-radius:10px}.manager .manager-list{gap:5px}.manager .list-head{margin-bottom:12px}.manager .list-head h1{font-size:26px;margin:3px 0}.manager .manager-nav{padding-top:8px}.manager .manager-nav button{padding:8px 2px;margin-bottom:1px}.manager .page{padding-top:18px}
 @media(min-width:650px){.protected-entry{max-width:520px}}
+
+/* Rodada visual: contraste prioritário e verde como assinatura principal. */
+:root{--green:#2f7659;--green-dark:#235842;--green-soft:#e2f0e7;--green-pale:#f1f7f1;--terracotta:#b6533d;--terracotta-dark:#8d382a;--muted:#66564e;--line:#dfd2c5;--ink:#2f241f;--leaf:#2f7659}
+body{color:var(--ink)}
+.brand b{color:var(--green)}.brand span{color:var(--muted)}
+.topbar .brand b{color:var(--green)}
+.icon-btn,.cart-icon,.account-btn{background:var(--green-soft);color:var(--green-dark)}
+.cart-icon i{background:var(--green-dark)}
+.client-hero{color:#263c31}.hero-copy span{color:var(--green-dark)}
+.searchbox svg{color:var(--green)}
+.btn-primary{background:var(--green);color:#fff;box-shadow:0 7px 15px rgba(47,118,89,.22)}.btn-primary:hover{background:var(--green-dark)}
+.btn-whatsapp{background:var(--green-soft);color:var(--green-dark);border:1px solid #b9d8c4}.btn-ghost,.link-btn{color:var(--green-dark)}.btn-soft{background:var(--green-soft);color:var(--green-dark);border:1px solid #c3dfcb}.btn-google{color:var(--ink)}.install{color:var(--green-dark)}
+.eyebrow{color:var(--green-dark)}.muted{color:var(--muted)}.chips button{color:var(--muted)}.chips button.selected{background:var(--green-dark);border-color:var(--green-dark);color:#fff}
+.featured{background:#e7f0df}.featured p{color:#4f6254}.featured>b,.price-lg,.summary .total{color:var(--green-dark)}.featured>svg{color:var(--green)}
+.tag{background:#f4d47d;color:#503918}.product-card{border-color:#ded3c9}.product-info h3{color:#2b211c}.product-info .stock{color:var(--green-dark);font-weight:700}.product-info>strong{color:var(--green-dark);font-size:18px}.card-action{background:var(--green-soft);color:var(--green-dark);border:1px solid #c3dfcb;min-height:36px}
+.bottom-nav button{color:#756962}.bottom-nav button.active{color:var(--green-dark)}
+.product-detail p,.page>p,.cart-row span,.choice-row span,.pay-options span,.account-card span,.order-card>div span:last-child,.notice span,.urgency small{color:var(--muted)}
+.product-detail .btn,.page>.btn{min-height:50px}.stepper span{color:var(--muted)}.stepper span.current,.stepper span.done{background:var(--green);border-color:var(--green)}.stepper i{background:#c9d8cd}
+label{color:#4b3a31}input,select{color:var(--ink);border-color:#d6c8bb}input::placeholder{color:#8a7b70}.choice-row button.chosen,.pay-options button.chosen{border-color:var(--green);background:var(--green-pale)}.choice-row svg,.pay-options svg{color:var(--green)}.notice{background:var(--green-pale)}.notice svg,.success-icon{color:var(--green)}.pix-box{background:#fff3d5}.pix-box button{color:var(--green-dark)}
+.status-pill.green{background:#dceee1;color:var(--green-dark)}
+.operator{--terracotta:var(--green);--terracotta-dark:var(--green-dark)}.operator .btn-primary{background:var(--green)}.operator .op-grid svg{color:var(--green);background:var(--green-soft)}.operator .status-tabs b{color:var(--green-dark)}.operator .status-tabs i{background:var(--green-dark)}
+.manager{--terracotta:var(--green);--terracotta-dark:var(--green-dark)}.manager .btn-primary{background:var(--green)}.manager .manager-nav button.active{color:var(--green-dark)}
+.urgent-label{color:#fff;background:#bd463b}.urgent-banner{color:#4b2a25}.urgent-banner svg{color:#bd463b}.urgent-order{border-color:#e8b5ad}
+/* Contraste em textos sobre fotografias: o copy fica em bloco sólido e a imagem recebe overlay lateral. */
+.client-hero:after{background:linear-gradient(90deg,rgba(248,212,127,.98) 0 52%,rgba(248,212,127,.12) 82%,transparent 100%)}
+.hero-copy{background:rgba(255,240,190,.28);padding:7px 8px;border-radius:10px}
+@media(max-width:420px){.hero-copy h1{font-size:29px}.product-info h3{font-size:13px}.product-info>strong{font-size:18px}}
+
+/* O acesso do gestor segue a mesma hierarquia: verde para ação principal, carvão apenas na moldura de navegação. */
+.manager-entry .btn-primary{background:var(--green);color:#fff}.manager-entry .btn-primary:hover{background:var(--green-dark)}
