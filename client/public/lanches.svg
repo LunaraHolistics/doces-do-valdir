@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">
+<rect width="400" height="300" fill="#f8ecd4"/>
+<path d="M140 160l40-70 40 70z" fill="#e0a53f"/>
+<path d="M196 160l40-70 40 70z" fill="#c8862f"/>
+<circle cx="176" cy="140" r="4" fill="#8a5a2b"/>
+<circle cx="232" cy="140" r="4" fill="#8a5a2b"/>
+<rect y="216" width="400" height="84" fill="#8a6a2b"/>
+<text x="200" y="268" text-anchor="middle" font-family="Georgia,serif" font-size="34" font-weight="bold" fill="#fffaf1">LANCHES</text>
+</svg>

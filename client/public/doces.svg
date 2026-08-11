@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">
+<rect width="400" height="300" fill="#f7ead9"/>
+<circle cx="200" cy="118" r="64" fill="#b97a3f"/>
+<circle cx="200" cy="106" r="46" fill="#d99a55"/>
+<path d="M178 106c8-10 36-10 44 0" stroke="#8a5a2b" stroke-width="6" fill="none" stroke-linecap="round"/>
+<rect x="150" y="150" width="100" height="26" rx="8" fill="#8a5a2b"/>
+<rect y="216" width="400" height="84" fill="#2f7659"/>
+<text x="200" y="268" text-anchor="middle" font-family="Georgia,serif" font-size="34" font-weight="bold" fill="#fffaf1">DOCES</text>
+</svg>

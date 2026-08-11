@@ -13,28 +13,32 @@ const IMG = {
   snacks: "/manus-storage/snacks-doces_a4125768.jpg",
   utility: "/manus-storage/utilidades-balcao_63f266d3.jpg",
   logo: "/logo-valdir.png",
+  doces: "/doces.svg",
+  balas: "/balas.svg",
+  lanches: "/lanches.svg",
+  utilidades: "/utilidades.svg",
 };
 
 const money = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const products = [
-  ["p1","Doce de leite cremoso","Doces","12,90",IMG.hero,"Pote 400g, textura cremosa e sabor de fazenda.",18],
-  ["p2","Paçoca rolha","Doces","7,50",IMG.hero,"Pacotinho com 6 unidades.",24],
-  ["p3","Pé de moleque","Doces","8,90",IMG.hero,"Crocante, feito com amendoim selecionado.",14],
-  ["p4","Doce de amendoim","Doces","6,90",IMG.hero,"Doce macio em embalagem individual.",21],
-  ["p5","Bala sortida","Balas","5,00",IMG.snacks,"Mix colorido para adoçar o dia.",42],
-  ["p6","Bala de goma","Balas","6,50",IMG.snacks,"Pacote 200g com sabores variados.",27],
-  ["p7","Chiclete hortelã","Balas","3,90",IMG.snacks,"Cartela com 10 unidades.",36],
-  ["p8","Pirulito coração","Balas","1,50",IMG.snacks,"Unidade, sabores sortidos.",56],
-  ["p9","Salgadinho queijo","Lanches","4,90",IMG.snacks,"Pacote crocante 90g.",33],
-  ["p10","Biscoito caseiro","Lanches","7,90",IMG.snacks,"Pacote 250g.",16],
-  ["p11","Chocolate ao leite","Lanches","6,90",IMG.snacks,"Barra 90g.",19],
-  ["p12","Suco em pó uva","Lanches","1,99",IMG.snacks,"Rende 1 litro.",48],
-  ["p13","Pilha AA","Utilidades","12,00",IMG.utility,"Cartela com 2 unidades.",11],
-  ["p14","Pilha AAA","Utilidades","12,00",IMG.utility,"Cartela com 2 unidades.",8],
-  ["p15","Caixa de fósforos","Utilidades","3,50",IMG.utility,"Caixa com 40 palitos.",17],
-  ["p16","Vela de aniversário","Utilidades","4,00",IMG.utility,"Kit com 10 unidades.",29],
+  ["p1","Doce de leite cremoso","Doces","12,90",IMG.doces,"Pote 400g, textura cremosa e sabor de fazenda.",18],
+  ["p2","Paçoca rolha","Doces","7,50",IMG.doces,"Pacotinho com 6 unidades.",24],
+  ["p3","Pé de moleque","Doces","8,90",IMG.doces,"Crocante, feito com amendoim selecionado.",14],
+  ["p4","Doce de amendoim","Doces","6,90",IMG.doces,"Doce macio em embalagem individual.",21],
+  ["p5","Bala sortida","Balas","5,00",IMG.balas,"Mix colorido para adoçar o dia.",42],
+  ["p6","Bala de goma","Balas","6,50",IMG.balas,"Pacote 200g com sabores variados.",27],
+  ["p7","Chiclete hortelã","Balas","3,90",IMG.balas,"Cartela com 10 unidades.",36],
+  ["p8","Pirulito coração","Balas","1,50",IMG.balas,"Unidade, sabores sortidos.",56],
+  ["p9","Salgadinho queijo","Lanches","4,90",IMG.lanches,"Pacote crocante 90g.",33],
+  ["p10","Biscoito caseiro","Lanches","7,90",IMG.lanches,"Pacote 250g.",16],
+  ["p11","Chocolate ao leite","Lanches","6,90",IMG.lanches,"Barra 90g.",19],
+  ["p12","Suco em pó uva","Lanches","1,99",IMG.lanches,"Rende 1 litro.",48],
+  ["p13","Pilha AA","Utilidades","12,00",IMG.utilidades,"Cartela com 2 unidades.",11],
+  ["p14","Pilha AAA","Utilidades","12,00",IMG.utilidades,"Cartela com 2 unidades.",8],
+  ["p15","Caixa de fósforos","Utilidades","3,50",IMG.utilidades,"Caixa com 40 palitos.",17],
+  ["p16","Vela de aniversário","Utilidades","4,00",IMG.utilidades,"Kit com 10 unidades.",29],
 ] as const;
 
 type Product = typeof products[number];
@@ -361,7 +365,7 @@ function ClientApp(props: any) {
   const {
     clientScreen, setClientScreen, selected, setSelected, category, setCategory,
     query, setQuery, cart, cartItems, cartTotal, add, remove, clear,
-    orderSent, orderDetails, setOrderDetails, clientAuth, setClientAuth, notify
+    clientAuth, setClientAuth, notify
   } = props;
 
   const cats = ["Todos", "Doces", "Balas", "Lanches", "Utilidades"];
@@ -565,7 +569,7 @@ function ClientApp(props: any) {
           ))}
         </div>
         <div className="featured" onClick={() => {setSelected(products[0]); go("product")}}>
-          <img src={IMG.hero}/>
+          <img src={IMG.doces}/>
           <div>
             <span className="tag">favorito da casa</span>
             <h2>Doce de leite cremoso</h2>
@@ -1444,7 +1448,7 @@ function OperatorApp({screen, setScreen, onExit}: {
               {routeStage === "done"
                 ? doneSummary
                 : "Valdir não precisa marcar pedido por pedido na rua."
-              }
+            }
             </p>
 
             {routeStage === "before" && (

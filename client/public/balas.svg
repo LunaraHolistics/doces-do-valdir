@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">
+<rect width="400" height="300" fill="#fdf3e3"/>
+<circle cx="150" cy="100" r="26" fill="#d94f4f"/>
+<circle cx="210" cy="80" r="22" fill="#e6a13c"/>
+<circle cx="258" cy="118" r="26" fill="#7fa650"/>
+<circle cx="180" cy="150" r="20" fill="#c76a8a"/>
+<circle cx="238" cy="166" r="16" fill="#5a8fa6"/>
+<rect y="216" width="400" height="84" fill="#b6533d"/>
+<text x="200" y="268" text-anchor="middle" font-family="Georgia,serif" font-size="34" font-weight="bold" fill="#fffaf1">BALAS</text>
+</svg>

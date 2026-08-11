@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">
+<rect width="400" height="300" fill="#eef0ea"/>
+<rect x="150" y="70" width="44" height="100" rx="8" fill="#5a7d8c"/>
+<rect x="164" y="58" width="16" height="12" rx="3" fill="#5a7d8c"/>
+<rect x="210" y="90" width="60" height="80" rx="6" fill="#b6533d"/>
+<rect x="210" y="90" width="60" height="26" fill="#8d382a"/>
+<rect y="216" width="400" height="84" fill="#3f5a68"/>
+<text x="200" y="268" text-anchor="middle" font-family="Georgia,serif" font-size="30" font-weight="bold" fill="#fffaf1">UTILIDADES</text>
+</svg>
