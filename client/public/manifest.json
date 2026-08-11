@@ -1,11 +1,11 @@
 {
-  "name": "Doces do Valdir",
-  "short_name": "Doces do Valdir",
+  "name": "Produtos do Valdir",
+  "short_name": "Valdir",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fffaf1",
   "theme_color": "#2d6a4f",
-  "description": "Catálogo e pedidos do Doces do Valdir: doces, balas, lanches e utilidades, com entrega por região em Ribeirão Preto e encomendas para Araraquara.",
+  "description": "Catálogo e pedidos da loja Produtos do Valdir: doces, balas, lanches e utilidades, com entrega por região em Ribeirão Preto e encomendas para Araraquara.",
   "icons": [
     { "src": "/logo-valdir.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/logo-valdir.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

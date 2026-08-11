@@ -1,10 +1,10 @@
-/* Doces do Valdir — protótipo navegável. Verde protagonista; terracota apenas para urgência/pendências. */
+/* Produtos do Valdir — protótipo navegável. Verde protagonista; terracota apenas para urgência/pendências. */
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft, ArrowRight, BarChart3, Camera, Check, ChevronRight, ClipboardList,
-  Copy, CreditCard, DollarSign, HeartHandshake, Home as HomeIcon, Image as ImageIcon, 
-  LayoutDashboard, MapPin, Package, Pencil, Plus, Search, Settings, ShoppingBag, 
+  Copy, CreditCard, DollarSign, HeartHandshake, Home as HomeIcon, Image as ImageIcon,
+  LayoutDashboard, MapPin, Package, Pencil, Plus, Search, Settings, ShoppingBag,
   ShoppingCart, Store, Trash2, Truck, UserRound, Users, WalletCards, X, Zap
 } from "lucide-react";
 
@@ -15,7 +15,7 @@ const IMG = {
   logo: "/logo-valdir.png",
 };
 
-const money = (n: number) => 
+const money = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const products = [
@@ -42,7 +42,7 @@ type Cart = Record<string, number>;
 
 const STATUS_SEQ = [
   "NOVO",
-  "CONFIRMADO", 
+  "CONFIRMADO",
   "AGUARDANDO PAGAMENTO",
   "SEPARANDO",
   "PRONTO PARA ROTA",
@@ -60,11 +60,26 @@ const mockOrders = [
   {id:"DV-1041", name:"Carlos Nunes", city:"Ribeirão Preto", region:"Zona Sul", total:74.9, status:"CONCLUÍDO", urgent:false, pay:"Cartão · pago total", items:"Chocolate, biscoito"},
 ];
 
+const routeOrders = [
+  {id:"DV-1048", name:"Dona Célia", urgent:true},
+  {id:"DV-1045", name:"João Ferreira", urgent:false},
+  {id:"DV-1050", name:"Zeca Neto", urgent:true},
+  {id:"DV-1051", name:"Neide Alves", urgent:false},
+  {id:"DV-1052", name:"Seu Antônio", urgent:false},
+];
+
+const REASONS = [
+  "Não estava em casa",
+  "Endereço errado",
+  "Cliente pediu reagendamento",
+  "Outro"
+];
+
 const mockHistory = [
   {
-    id: "DV-1038", 
-    date: "08 ago 2026", 
-    status: "CONCLUÍDO", 
+    id: "DV-1038",
+    date: "08 ago 2026",
+    status: "CONCLUÍDO",
     items: [
       {id:"p1", qty:2, price:12.9},
       {id:"p2", qty:2, price:7.5},
@@ -72,9 +87,9 @@ const mockHistory = [
     ]
   },
   {
-    id: "DV-0982", 
-    date: "22 jul 2026", 
-    status: "CONCLUÍDO", 
+    id: "DV-0982",
+    date: "22 jul 2026",
+    status: "CONCLUÍDO",
     items: [
       {id:"p11", qty:3, price:6.9},
       {id:"p10", qty:2, price:7.9}
@@ -82,21 +97,21 @@ const mockHistory = [
   },
 ];
 
-const historyTotal = (o: any) => 
+const historyTotal = (o: any) =>
   o.items.reduce((s: number, it: any) => s + it.qty * it.price, 0);
 
 function Logo({small = false, onClick}: {small?: boolean; onClick?: () => void}) {
   const inner = (
     <>
-      <img src={IMG.logo} alt="Doces do Valdir"/>
+      <img src={IMG.logo} alt="Produtos do Valdir"/>
       <div>
-        <strong>Doces do</strong>
+        <strong>Produtos do</strong>
         <b>Valdir</b>
       </div>
     </>
   );
-  
-  return onClick 
+
+  return onClick
     ? <button className="brand brand-btn" onClick={onClick} aria-label="Voltar para a página inicial">{inner}</button>
     : <div className="brand">{inner}</div>;
 }
@@ -109,9 +124,9 @@ function Button({children, onClick, variant = "primary", className = "", disable
   disabled?: boolean;
 }) {
   return (
-    <button 
-      disabled={disabled} 
-      onClick={onClick} 
+    <button
+      disabled={disabled}
+      onClick={onClick}
       className={`btn btn-${variant} ${className}`}
     >
       {children}
@@ -130,7 +145,7 @@ function Header({title, back, onBack, cart = 0, goCart, subtitle, onLogo}: {
 }) {
   return (
     <header className="topbar">
-      {back 
+      {back
         ? <button className="icon-btn" onClick={onBack} aria-label="Voltar">
             <ArrowLeft size={21}/>
           </button>
@@ -140,7 +155,7 @@ function Header({title, back, onBack, cart = 0, goCart, subtitle, onLogo}: {
         {title && <strong>{title}</strong>}
         {subtitle && <span>{subtitle}</span>}
       </div>
-      {goCart 
+      {goCart
         ? <button className="cart-icon" onClick={goCart} aria-label="Abrir carrinho">
             <ShoppingCart size={21}/>
             {cart > 0 && <i>{cart}</i>}
@@ -171,9 +186,9 @@ function BottomNav({items, active, onSelect}: {
   return (
     <nav className="bottom-nav">
       {items.map(i => (
-        <button 
-          key={i.id} 
-          className={active === i.id ? "active" : ""} 
+        <button
+          key={i.id}
+          className={active === i.id ? "active" : ""}
           onClick={() => onSelect(i.id)}
         >
           <i>{i.icon}</i>
@@ -184,12 +199,12 @@ function BottomNav({items, active, onSelect}: {
   );
 }
 
-function WhatsApp({text = "Olá, Valdir! Estou vendo os produtos do Doces do Valdir e gostaria de tirar uma dúvida."}: {
+function WhatsApp({text = "Olá, Valdir! Estou vendo o catálogo da loja e gostaria de tirar uma dúvida."}: {
   text?: string;
 }) {
   return (
-    <Button 
-      variant="whatsapp" 
+    <Button
+      variant="whatsapp"
       onClick={() => toast.success("WhatsApp simulado", {description: text})}
     >
       <HeartHandshake size={18}/>
@@ -236,7 +251,7 @@ function ProductCard({p, qty, onAdd, onOpen}: {
 export default function Home() {
   const initialPath = typeof window !== "undefined" ? window.location.pathname : "/";
   const [experience, setExperience] = useState<"client" | "operator" | "manager">(
-    initialPath.startsWith("/operacao") ? "operator" : 
+    initialPath.startsWith("/operacao") ? "operator" :
     initialPath.startsWith("/gestao") ? "manager" : "client"
   );
   const [accessGranted, setAccessGranted] = useState(
@@ -263,14 +278,14 @@ export default function Home() {
   const [managerTab, setManagerTab] = useState("dashboard");
   const [toastText, setToastText] = useState("");
 
-  const cartItems = useMemo(() => 
+  const cartItems = useMemo(() =>
     Object.entries(cart)
       .filter(([, q]) => q > 0)
       .map(([id, q]) => ({p: products.find(p => p[0] === id)!, q})),
     [cart]
   );
 
-  const cartTotal = cartItems.reduce((s, {p, q}) => 
+  const cartTotal = cartItems.reduce((s, {p, q}) =>
     s + Number(p[3].replace(",", ".")) * q, 0
   );
 
@@ -295,7 +310,7 @@ export default function Home() {
 
   if (experience === "client") {
     return (
-      <ClientApp 
+      <ClientApp
         clientScreen={clientScreen}
         setClientScreen={setClientScreen}
         selected={selected}
@@ -327,9 +342,9 @@ export default function Home() {
 
   if (!accessGranted) {
     return (
-      <ProtectedEntry 
-        kind={experience} 
-        onUnlock={() => setAccessGranted(true)} 
+      <ProtectedEntry
+        kind={experience}
+        onUnlock={() => setAccessGranted(true)}
         onBack={leaveProtectedArea}
       />
     );
@@ -344,15 +359,14 @@ export default function Home() {
 
 function ClientApp(props: any) {
   const {
-    clientScreen, setClientScreen, selected, setSelected, category, setCategory, 
-    query, setQuery, cart, cartItems, cartTotal, add, remove, clear, checkoutStep, 
-    setCheckoutStep, orderSent, setOrderSent, orderDetails, setOrderDetails, 
-    clientAuth, setClientAuth, notify
+    clientScreen, setClientScreen, selected, setSelected, category, setCategory,
+    query, setQuery, cart, cartItems, cartTotal, add, remove, clear,
+    orderSent, orderDetails, setOrderDetails, clientAuth, setClientAuth, notify
   } = props;
 
   const cats = ["Todos", "Doces", "Balas", "Lanches", "Utilidades"];
-  const filtered = products.filter((p: Product) => 
-    (category === "Todos" || p[2] === category) && 
+  const filtered = products.filter((p: Product) =>
+    (category === "Todos" || p[2] === category) &&
     p[1].toLowerCase().includes(query.toLowerCase())
   );
 
@@ -362,13 +376,13 @@ function ClientApp(props: any) {
   };
 
   const nav = (
-    <BottomNav 
+    <BottomNav
       items={[
         {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
         {id: "cart", label: "Carrinho", icon: <ShoppingCart size={19}/>},
         {id: "account", label: "Conta", icon: <UserRound size={19}/>}
-      ]} 
-      active={clientScreen} 
+      ]}
+      active={clientScreen}
       onSelect={(id) => go(id)}
     />
   );
@@ -376,11 +390,11 @@ function ClientApp(props: any) {
   if (clientScreen === "product" && selected) {
     return (
       <div className="app-shell">
-        <Header 
-          back 
-          onBack={() => go("home")} 
-          cart={Object.values(cart).reduce<number>((a, b) => a + Number(b), 0)} 
-          goCart={() => go("cart")} 
+        <Header
+          back
+          onBack={() => go("home")}
+          cart={Object.values(cart).reduce<number>((a, b) => a + Number(b), 0)}
+          goCart={() => go("cart")}
           onLogo={() => go("home")}
         />
         <main className="page">
@@ -401,8 +415,8 @@ function ClientApp(props: any) {
             <Button onClick={() => {add(selected[0]); notify("Produto adicionado ao carrinho");}}>
               Adicionar ao carrinho <ArrowRight size={17}/>
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => toast.success("WhatsApp simulado", {
                 description: `Olá, Valdir! Tenho uma dúvida sobre ${selected[1]}.`
               })}
@@ -424,9 +438,9 @@ function ClientApp(props: any) {
           <Stepper current={1}/>
           <h1>Seu carrinho</h1>
           {cartItems.length === 0 ? (
-            <Empty 
-              title="Seu carrinho está vazio" 
-              text="Escolha um doce para começar." 
+            <Empty
+              title="Seu carrinho está vazio"
+              text="Escolha um doce para começar."
               action={() => go("home")}
             />
           ) : (
@@ -442,9 +456,9 @@ function ClientApp(props: any) {
                         <button onClick={() => remove(p[0])}>−</button>
                         <b>{q}</b>
                         <button onClick={() => add(p[0])}>+</button>
-                        <button 
-                          className="trash" 
-                          title="Remover" 
+                        <button
+                          className="trash"
+                          title="Remover"
                           onClick={() => clear(p[0])}
                         >
                           <Trash2 size={15}/>
@@ -464,7 +478,7 @@ function ClientApp(props: any) {
                 <strong>Total</strong>
                 <strong className="total">{money(cartTotal)}</strong>
               </div>
-              <Button onClick={() => {setCheckoutStep(1); go("checkout")}}>
+              <Button onClick={() => go("checkout")}>
                 Avançar para o pedido <ArrowRight size={18}/>
               </Button>
               <WhatsApp/>
@@ -497,9 +511,9 @@ function ClientApp(props: any) {
       <header className="client-hero">
         <div className="hero-top">
           <Logo onClick={() => go("home")}/>
-          <button 
-            className="account-btn" 
-            onClick={() => {setClientAuth(true); go("account")}} 
+          <button
+            className="account-btn"
+            onClick={() => {setClientAuth(true); go("account")}}
             aria-label="Minha conta"
           >
             <UserRound size={19}/>
@@ -514,16 +528,16 @@ function ClientApp(props: any) {
       <main className="page catalog-page">
         <div className="searchbox">
           <Search size={18}/>
-          <input 
-            value={query} 
-            onChange={e => setQuery(e.target.value)} 
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
             placeholder="Buscar um doce, uma pilha..."
           />
         </div>
         <div className="catalog-actions">
           <WhatsApp/>
-          <button 
-            className="install" 
+          <button
+            className="install"
             onClick={() => notify("No celular, use 'Adicionar à tela inicial'")}
           >
             <Zap size={16}/>
@@ -541,9 +555,9 @@ function ClientApp(props: any) {
         </div>
         <div className="chips">
           {cats.map(c => (
-            <button 
-              key={c} 
-              className={category === c ? "selected" : ""} 
+            <button
+              key={c}
+              className={category === c ? "selected" : ""}
               onClick={() => setCategory(c)}
             >
               {c}
@@ -566,11 +580,11 @@ function ClientApp(props: any) {
         </div>
         <div className="product-grid">
           {filtered.map((p: Product) => (
-            <ProductCard 
-              key={p[0]} 
-              p={p} 
-              qty={cart[p[0]] || 0} 
-              onAdd={() => {add(p[0]); notify(`${p[1]} foi para o carrinho`)}} 
+            <ProductCard
+              key={p[0]}
+              p={p}
+              qty={cart[p[0]] || 0}
+              onAdd={() => {add(p[0]); notify(`${p[1]} foi para o carrinho`)}}
               onOpen={() => {setSelected(p); go("product")}}
             />
           ))}
@@ -598,14 +612,14 @@ function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrder
   const entry = cartTotal / 2;
   const needsEntry = payment !== "Dinheiro";
   const orderNumber = "DV-1049";
-  
-  const addressLine = city === "Araraquara" 
-    ? "Encomenda — combinação de retirada/envio" 
-    : delivery === "Retirada" 
-    ? "Retirada no balcão do Valdir" 
+
+  const addressLine = city === "Araraquara"
+    ? "Encomenda — combinação de retirada/envio"
+    : delivery === "Retirada"
+    ? "Retirada no balcão do Valdir"
     : `${addr || "Rua..."}, ${num || "s/n"} – ${district || "Centro"}`;
 
-  const whatsMsg = `🧾 Pedido ${orderNumber} · Doces do Valdir
+  const whatsMsg = `🧾 Pedido ${orderNumber} · Produtos do Valdir
 Cliente: ${name || "Visitante"}
 Telefone: ${phone || "não informado"}
 Cidade: ${city}
@@ -624,36 +638,36 @@ Obs: —`;
 
   return (
     <div className="app-shell">
-      <Header 
-        title="Fechar pedido" 
-        back 
+      <Header
+        title="Fechar pedido"
+        back
         onBack={() => checkoutStep === 1 ? go("cart") : setCheckoutStep(checkoutStep - 1)}
       />
       <main className="page">
         <Stepper current={checkoutStep === 1 ? 2 : 3}/>
-        
+
         {checkoutStep === 1 && (
           <>
             <span className="eyebrow">etapa 2 de 3 · entrega</span>
             <h1>Como você recebe?</h1>
             <label>
               Nome
-              <input 
-                value={name} 
-                onChange={e => setName(e.target.value)} 
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
                 placeholder="Ex.: Maria de Souza"
               />
             </label>
             <label>
               Telefone
-              <input 
-                value={phone} 
-                onChange={e => setPhone(e.target.value)} 
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
                 placeholder="(16) 99999-9999"
               />
             </label>
-            <Button 
-              variant="google" 
+            <Button
+              variant="google"
               onClick={() => {setName("Maria de Souza"); notify("Login Google simulado: Maria de Souza")}}
             >
               G <span>Entrar com Google</span>
@@ -666,19 +680,19 @@ Obs: —`;
                 <option>Araraquara</option>
               </select>
             </label>
-            
+
             {city === "Ribeirão Preto" ? (
               <div className="choice-row">
-                <button 
-                  className={delivery === "Entrega" ? "chosen" : ""} 
+                <button
+                  className={delivery === "Entrega" ? "chosen" : ""}
                   onClick={() => setDelivery("Entrega")}
                 >
                   <Truck/>
                   <b>Entrega</b>
                   <span>Organizamos por região</span>
                 </button>
-                <button 
-                  className={delivery === "Retirada" ? "chosen" : ""} 
+                <button
+                  className={delivery === "Retirada" ? "chosen" : ""}
                   onClick={() => setDelivery("Retirada")}
                 >
                   <Store/>
@@ -693,39 +707,39 @@ Obs: —`;
                 <span>Próxima encomenda: <strong>15/08/2026</strong></span>
               </div>
             )}
-            
+
             {delivery === "Entrega" && city === "Ribeirão Preto" && (
               <>
                 <label>
                   Nome do local
-                  <input 
-                    value={localName} 
-                    onChange={e => setLocalName(e.target.value)} 
+                  <input
+                    value={localName}
+                    onChange={e => setLocalName(e.target.value)}
                     placeholder="Casa da Maria"
                   />
                 </label>
                 <label>
                   Endereço
-                  <input 
-                    value={addr} 
-                    onChange={e => setAddr(e.target.value)} 
+                  <input
+                    value={addr}
+                    onChange={e => setAddr(e.target.value)}
                     placeholder="Rua, avenida..."
                   />
                 </label>
                 <div className="two-cols">
                   <label>
                     Número
-                    <input 
-                      value={num} 
-                      onChange={e => setNum(e.target.value)} 
+                    <input
+                      value={num}
+                      onChange={e => setNum(e.target.value)}
                       placeholder="123"
                     />
                   </label>
                   <label>
                     Bairro
-                    <input 
-                      value={district} 
-                      onChange={e => setDistrict(e.target.value)} 
+                    <input
+                      value={district}
+                      onChange={e => setDistrict(e.target.value)}
                       placeholder="Centro"
                     />
                   </label>
@@ -741,7 +755,7 @@ Obs: —`;
                 </label>
               </>
             )}
-            
+
             {delivery === "Retirada" && city === "Ribeirão Preto" && (
               <div className="notice">
                 <Store/>
@@ -749,42 +763,42 @@ Obs: —`;
                 <span>Endereço de retirada: Rua dos Doces, 123 — referência: praça central (configurável no painel).</span>
               </div>
             )}
-            
+
             <div className="urgency">
               <div>
                 <Zap/>
                 <b>Quando você precisa receber?</b>
               </div>
-              <button 
-                className={!urgent ? "chosen" : ""} 
+              <button
+                className={!urgent ? "chosen" : ""}
                 onClick={() => setUrgent(false)}
               >
                 Posso aguardar a rota normal
               </button>
-              <button 
-                className={urgent ? "urgent chosen" : ""} 
+              <button
+                className={urgent ? "urgent chosen" : ""}
                 onClick={() => setUrgent(true)}
               >
                 🚨 URGENTE — preciso o quanto antes
               </button>
               <small>Urgente sinaliza prioridade ao vendedor, não promete entrega imediata.</small>
             </div>
-            
+
             <Button onClick={() => setCheckoutStep(2)}>
               Ir para pagamento <ArrowRight size={17}/>
             </Button>
           </>
         )}
-        
+
         {checkoutStep === 2 && (
           <>
             <span className="eyebrow">etapa 3 de 3 · pagamento</span>
             <h1>Como você paga?</h1>
             <div className="pay-options">
               {["PIX", "Cartão", "Dinheiro"].map(p => (
-                <button 
-                  className={payment === p ? "chosen" : ""} 
-                  onClick={() => setPayment(p)} 
+                <button
+                  className={payment === p ? "chosen" : ""}
+                  onClick={() => setPayment(p)}
                   key={p}
                 >
                   {p === "PIX" ? <WalletCards/> : p === "Cartão" ? <CreditCard/> : <DollarSign/>}
@@ -801,14 +815,14 @@ Obs: —`;
               <span>Saldo restante</span>
               <b>{needsEntry ? money(entry) : "Pagamento na entrega/retirada"}</b>
             </div>
-            
+
             {payment === "PIX" && (
               <div className="pix-box">
                 <span>chave PIX mock</span>
                 <b>doces.valdir@demo.com</b>
                 <small>Titular: Valdir</small>
-                <button 
-                  className={pixCopied ? "copied" : ""} 
+                <button
+                  className={pixCopied ? "copied" : ""}
                   onClick={() => {
                     navigator.clipboard?.writeText("doces.valdir@demo.com");
                     setPixCopied(true);
@@ -836,20 +850,20 @@ Obs: —`;
                 <small>Após pagar, volte ao status do pedido para enviar o comprovante.</small>
               </div>
             )}
-            
+
             {payment === "Cartão" && (
               <div className="pix-box">
                 <span>cartão · entrada de 50%</span>
                 <small>Os dados do cartão serão combinados com Valdir após a confirmação do pedido.</small>
               </div>
             )}
-            
+
             <Button onClick={() => setCheckoutStep(3)}>
               Revisar pedido <ArrowRight size={17}/>
             </Button>
           </>
         )}
-        
+
         {checkoutStep === 3 && (
           <>
             <span className="eyebrow">revisão final</span>
@@ -953,17 +967,17 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
         <span className="eyebrow">Pedido {orderDetails.id}</span>
         <h1>{sent ? "Comprovante enviado." : "Pedido recebido com carinho."}</h1>
         <p>
-          {sent 
+          {sent
             ? "Valdir receberá a imagem com os dados desta entrada para conferir o pagamento."
             : "Acompanhe aqui a confirmação do seu pedido, sem precisar voltar ao catálogo."
           }
         </p>
         <div className="order-status">
           <b>
-            {orderDetails.confirmed 
-              ? "PAGAMENTO CONFIRMADO" 
-              : orderDetails.payment === "Dinheiro" 
-              ? "PEDIDO CONFIRMADO" 
+            {orderDetails.confirmed
+              ? "PAGAMENTO CONFIRMADO"
+              : orderDetails.payment === "Dinheiro"
+              ? "PEDIDO CONFIRMADO"
               : "AGUARDANDO CONFIRMAÇÃO DO PAGAMENTO"
             }
           </b>
@@ -975,8 +989,8 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
             <strong>{orderDetails.payment === "Dinheiro" ? "—" : money(entry)}</strong>
             <span>Saldo</span>
             <strong>
-              {orderDetails.payment === "Dinheiro" 
-                ? "Pagamento na entrega/retirada" 
+              {orderDetails.payment === "Dinheiro"
+                ? "Pagamento na entrega/retirada"
                 : money(entry)
               }
             </strong>
@@ -987,16 +1001,16 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
             ))}
           </div>
           <small>
-            Status atual: {STATUS_SEQ[idx]}. 
-            {orderDetails.confirmed 
+            Status atual: {STATUS_SEQ[idx]}.{" "}
+            {orderDetails.confirmed
               ? "Valdir já confirmou a entrada. O pedido pode seguir para separação."
-              : orderDetails.payment === "Dinheiro" 
+              : orderDetails.payment === "Dinheiro"
               ? `Pagamento: dinheiro na ${orderDetails.delivery.toLowerCase() === "retirada" ? "retirada" : "entrega"}.`
               : "A entrada de 50% ainda aguarda confirmação."
             }
           </small>
         </div>
-        
+
         {proofNeeded && !sent && (
           <div className="proof-card">
             <div>
@@ -1008,21 +1022,21 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
               <label htmlFor="proof-camera">
                 <Camera size={18}/>
                 Tirar foto
-                <input 
-                  id="proof-camera" 
-                  type="file" 
-                  accept="image/*" 
-                  capture="environment" 
+                <input
+                  id="proof-camera"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
                   onChange={e => handleFile(e.target.files?.[0])}
                 />
               </label>
               <label htmlFor="proof-gallery">
                 <ImageIcon size={18}/>
                 Escolher da galeria
-                <input 
-                  id="proof-gallery" 
-                  type="file" 
-                  accept="image/*" 
+                <input
+                  id="proof-gallery"
+                  type="file"
+                  accept="image/*"
                   onChange={e => handleFile(e.target.files?.[0])}
                 />
               </label>
@@ -1039,7 +1053,7 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
             )}
           </div>
         )}
-        
+
         {!proofNeeded && orderDetails.payment === "Dinheiro" && (
           <div className="cash-note">
             <DollarSign size={20}/>
@@ -1047,9 +1061,9 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
             <span>Não é necessário enviar comprovante.</span>
           </div>
         )}
-        
-        <Button 
-          variant="whatsapp" 
+
+        <Button
+          variant="whatsapp"
           onClick={() => toast.success("WhatsApp simulado aberto", {
             description: `Pedido ${orderDetails.id} · ${orderDetails.customer}`
           })}
@@ -1062,13 +1076,13 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
           <Button variant="ghost" onClick={() => go("account")}>Ver minha conta</Button>
         )}
       </main>
-      <BottomNav 
+      <BottomNav
         items={[
           {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
           {id: "cart", label: "Carrinho", icon: <ShoppingCart size={19}/>},
           {id: "account", label: "Conta", icon: <UserRound size={19}/>}
-        ]} 
-        active="home" 
+        ]}
+        active="home"
         onSelect={(id) => go(id)}
       />
     </div>
@@ -1087,15 +1101,15 @@ function Account({go, clientAuth, clientScreen, setCart, notify}: any) {
   };
 
   const [sel, setSel] = useState<any | null>(null);
-  
+
   const nav = (
-    <BottomNav 
+    <BottomNav
       items={[
         {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
         {id: "cart", label: "Carrinho", icon: <ShoppingCart size={19}/>},
         {id: "account", label: "Conta", icon: <UserRound size={19}/>}
-      ]} 
-      active="account" 
+      ]}
+      active="account"
       onSelect={id => go(id)}
     />
   );
@@ -1143,7 +1157,7 @@ function Account({go, clientAuth, clientScreen, setCart, notify}: any) {
                 <span className="eyebrow">{o.date} · {o.id}</span>
                 <b>{money(historyTotal(o))}</b>
                 <span>
-                  {o.items.map((it: any) => 
+                  {o.items.map((it: any) =>
                     `${it.qty}x ${products.find(p => p[0] === it.id)?.[1]}`
                   ).join(", ")}
                 </span>
@@ -1185,7 +1199,7 @@ function Account({go, clientAuth, clientScreen, setCart, notify}: any) {
               <span className="eyebrow">{o.date} · {o.id}</span>
               <b>{money(historyTotal(o))}</b>
               <span>
-                {o.items.map((it: any) => 
+                {o.items.map((it: any) =>
                   `${it.qty}x ${products.find(p => p[0] === it.id)?.[1]}`
                 ).join(", ")}
               </span>
@@ -1220,7 +1234,7 @@ function ProtectedEntry({kind, onUnlock, onBack}: {
   onBack: () => void;
 }) {
   const manager = kind === "manager";
-  
+
   return (
     <div className={`app-shell protected-entry ${manager ? "manager-entry" : "operator-entry"}`}>
       <div className="protected-mark">
@@ -1231,14 +1245,14 @@ function ProtectedEntry({kind, onUnlock, onBack}: {
         <span className="eyebrow">acesso protegido</span>
         <h1>{manager ? "Olá, gestor." : "Olá, Valdir e família."}</h1>
         <p>
-          {manager 
-            ? "Entre para acompanhar o movimento completo do Doces do Valdir."
+          {manager
+            ? "Entre para acompanhar o movimento completo da loja Produtos do Valdir."
             : "Este espaço reúne os pedidos, produtos e entregas do dia."
           }
         </p>
         <label>
           Usuário
-          <input defaultValue={manager ? "gestor@docesdovaldir.demo" : "valdir@docesdovaldir.demo"}/>
+          <input defaultValue={manager ? "gestor@produtosdovaldir.demo" : "valdir@produtosdovaldir.demo"}/>
         </label>
         <label>
           Senha
@@ -1263,13 +1277,23 @@ function OperatorApp({screen, setScreen, onExit}: {
   onExit: () => void;
 }) {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [routeDone, setRouteDone] = useState(false);
-  
+  const [routeStage, setRouteStage] = useState<"before" | "ask" | "pending" | "done">("before");
+  const [pend, setPend] = useState<Record<string, boolean>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [doneSummary, setDoneSummary] = useState("");
+
   const opNav = [
     {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
     {id: "orders", label: "Pedidos", icon: <ClipboardList size={19}/>},
     {id: "routes", label: "Entregas", icon: <Truck size={19}/>}
   ];
+
+  const novos = mockOrders.filter(o => o.status === "NOVO").length;
+  const andamento = mockOrders.filter(o =>
+    ["CONFIRMADO", "AGUARDANDO PAGAMENTO", "SEPARANDO"].includes(o.status)
+  ).length;
+  const prontos = mockOrders.filter(o => o.status === "PRONTO PARA ROTA").length;
+  const pendCount = routeOrders.filter(o => pend[o.id]).length;
 
   if (screen === "product") {
     return (
@@ -1324,19 +1348,19 @@ function OperatorApp({screen, setScreen, onExit}: {
           <div className="urgent-banner">
             <Zap/>
             <div>
-              <b>2 pedidos urgentes</b>
+              <b>{mockOrders.filter(o => o.urgent).length} pedidos urgentes</b>
               <span>Olhe primeiro para eles</span>
             </div>
           </div>
           <div className="status-tabs">
-            <b>NOVOS <i>2</i></b>
-            <span>EM ANDAMENTO 3</span>
-            <span>PRONTOS 1</span>
+            <b>NOVOS <i>{novos}</i></b>
+            <span>EM ANDAMENTO <i>{andamento}</i></span>
+            <span>PRONTOS <i>{prontos}</i></span>
           </div>
           {mockOrders.slice(0, 5).map(o => (
-            <div 
-              key={o.id} 
-              className={`op-order ${o.urgent ? "urgent-order" : ""}`} 
+            <div
+              key={o.id}
+              className={`op-order ${o.urgent ? "urgent-order" : ""}`}
               onClick={() => {setSelectedOrder(o); setScreen("order")}}
             >
               {o.urgent && <span className="urgent-label">🚨 URGENTE</span>}
@@ -1409,31 +1433,85 @@ function OperatorApp({screen, setScreen, onExit}: {
               <Truck/>
               <div>
                 <b>Rota Zona Norte</b>
-                <span>8 pedidos · 2 urgentes</span>
+                <span>{routeOrders.length} pedidos · {routeOrders.filter(o => o.urgent).length} urgentes</span>
               </div>
               <span className="status-pill green">pronta</span>
             </div>
             <div className="route-progress">
-              <div style={{width: routeDone ? "100%" : "0%"}}/>
+              <div style={{width: routeStage === "done" ? "100%" : "0%"}}/>
             </div>
             <p>
-              {routeDone 
-                ? "Rota finalizada. 1 pedido ficou pendente."
+              {routeStage === "done"
+                ? doneSummary
                 : "Valdir não precisa marcar pedido por pedido na rua."
               }
             </p>
-            <Button onClick={() => {
-              setRouteDone(true);
-              toast.success("Rota finalizada em lote");
-            }}>
-              {routeDone ? "Rota finalizada" : "Finalizar rota"} <Check size={17}/>
-            </Button>
+
+            {routeStage === "before" && (
+              <Button onClick={() => setRouteStage("ask")}>
+                Finalizar rota <Check size={17}/>
+              </Button>
+            )}
+
+            {routeStage === "ask" && (
+              <>
+                <p><b>Você conseguiu entregar todos os pedidos desta rota?</b></p>
+                <Button onClick={() => {
+                  setDoneSummary("Rota finalizada. Todos os pedidos foram concluídos.");
+                  setRouteStage("done");
+                  toast.success("Rota finalizada em lote");
+                }}>
+                  SIM, entreguei tudo <Check size={17}/>
+                </Button>
+                <Button variant="soft" onClick={() => setRouteStage("pending")}>
+                  NÃO, alguns ficaram pendentes
+                </Button>
+              </>
+            )}
+
+            {routeStage === "pending" && (
+              <>
+                {routeOrders.map(o => (
+                  <div className="op-order" key={o.id}>
+                    <div>
+                      <b>{o.name}</b>
+                      <span>{o.id} · Zona Norte</span>
+                      {pend[o.id] && (
+                        <select
+                          value={reasons[o.id] || REASONS[0]}
+                          onChange={e => setReasons(r => ({...r, [o.id]: e.target.value}))}
+                        >
+                          {REASONS.map(r => <option key={r}>{r}</option>)}
+                        </select>
+                      )}
+                    </div>
+                    <button
+                      className="btn btn-soft"
+                      style={{width: "auto", minHeight: 40, padding: "0 12px"}}
+                      onClick={() => setPend(p => ({...p, [o.id]: !p[o.id]}))}
+                    >
+                      {pend[o.id] ? "pendente" : "marcar pendente"}
+                    </button>
+                  </div>
+                ))}
+                <Button onClick={() => {
+                  setDoneSummary(
+                    `Rota finalizada. ${routeOrders.length - pendCount} concluídos, ${pendCount} pendentes.`
+                  );
+                  setRouteStage("done");
+                  toast.success("Rota finalizada em lote");
+                }}>
+                  Concluir rota <Check size={17}/>
+                </Button>
+              </>
+            )}
           </div>
-          {routeDone && (
-            <div className="pending-card">
+
+          {routeStage === "done" && routeOrders.filter(o => pend[o.id]).map(o => (
+            <div className="pending-card" key={o.id}>
               <span className="urgent-label">PENDENTE DE ENTREGA</span>
-              <b>Rafael Souza · DV-1043</b>
-              <span>Não estava em casa</span>
+              <b>{o.name} · {o.id}</b>
+              <span>{reasons[o.id] || REASONS[0]}</span>
               <div>
                 <Button variant="soft" onClick={() => toast.success("Pendência reagendada")}>
                   Reagendar
@@ -1443,7 +1521,7 @@ function OperatorApp({screen, setScreen, onExit}: {
                 </Button>
               </div>
             </div>
-          )}
+          ))}
         </main>
         <BottomNav items={opNav} active="routes" onSelect={setScreen}/>
       </div>
@@ -1473,7 +1551,7 @@ function OperatorApp({screen, setScreen, onExit}: {
           <button onClick={() => setScreen("orders")}>
             <ClipboardList/>
             <b>Pedidos</b>
-            <span>2 precisam de atenção</span>
+            <span>{novos + andamento} precisam de atenção</span>
           </button>
           <button onClick={() => setScreen("routes")}>
             <Truck/>
@@ -1522,7 +1600,7 @@ function ManagerApp({tab, setTab, onExit}: {
           <>
             <div className="manager-welcome">
               <div>
-                <span>terça-feira, 12 de agosto</span>
+                <span>terça-feira, 11 de agosto</span>
                 <h1>Bom dia, gestor.</h1>
               </div>
               <div className="avatar orange">V</div>
@@ -1560,7 +1638,7 @@ function ManagerApp({tab, setTab, onExit}: {
             <div className="split-cards">
               <div>
                 <Zap/>
-                <b>2 urgentes</b>
+                <b>{mockOrders.filter(o => o.urgent).length} urgentes</b>
                 <span>pedidos para olhar</span>
               </div>
               <div>
@@ -1573,55 +1651,55 @@ function ManagerApp({tab, setTab, onExit}: {
         )}
 
         {tab === "products" && (
-          <ManagerList 
-            title="Produtos" 
-            subtitle="16 itens no catálogo" 
+          <ManagerList
+            title="Produtos"
+            subtitle="16 itens no catálogo"
             rows={products.slice(0, 7).map(p => ({
               name: p[1],
               meta: `${p[6]} em estoque · ${p[2]}`,
               value: money(Number(p[3].replace(",", ".")))
-            }))} 
+            }))}
             action="Novo produto"
           />
         )}
 
         {tab === "stock" && (
-          <ManagerList 
-            title="Estoque" 
-            subtitle="Acompanhe o que precisa de atenção" 
+          <ManagerList
+            title="Estoque"
+            subtitle="Acompanhe o que precisa de atenção"
             rows={products.slice(0, 6).map(p => ({
               name: p[1],
               meta: `mínimo 10 unidades`,
               value: `${p[6]} un.`,
               alert: p[6] < 10
-            }))} 
+            }))}
             action="Ajustar estoque"
           />
         )}
 
         {tab === "orders" && (
-          <ManagerList 
-            title="Pedidos" 
-            subtitle="8 pedidos recentes" 
+          <ManagerList
+            title="Pedidos"
+            subtitle="8 pedidos recentes"
             rows={mockOrders.map(o => ({
               name: `${o.id} · ${o.name}`,
               meta: `${o.city} · ${o.pay}`,
               value: money(o.total),
               alert: o.urgent
-            }))} 
+            }))}
             action="Filtrar status"
           />
         )}
 
         {tab === "clients" && (
-          <ManagerList 
-            title="Clientes" 
-            subtitle="Base de clientes fictícia" 
+          <ManagerList
+            title="Clientes"
+            subtitle="Base de clientes fictícia"
             rows={["Maria de Souza", "Dona Célia", "Marcos Lima", "Ana Paula", "João Ferreira"].map((n, i) => ({
               name: n,
               meta: `${i + 2} pedidos · último em agosto`,
               value: i % 2 === 0 ? "ativo" : "cadastrado"
-            }))} 
+            }))}
             action="Exportar lista"
           />
         )}
@@ -1629,14 +1707,14 @@ function ManagerApp({tab, setTab, onExit}: {
         {tab === "reports" && <Reports/>}
 
         {tab === "routes" && (
-          <ManagerList 
-            title="Rotas" 
-            subtitle="Regiões e pendências" 
+          <ManagerList
+            title="Rotas"
+            subtitle="Regiões e pendências"
             rows={["Zona Norte", "Centro", "Zona Sul", "Zona Leste"].map((n, i) => ({
               name: n,
               meta: `quarta-feira · ${i + 2} pedidos`,
               value: i === 0 ? "2 urgentes" : "organizada"
-            }))} 
+            }))}
             action="Organizar rota"
           />
         )}
@@ -1661,9 +1739,9 @@ function ManagerApp({tab, setTab, onExit}: {
       </main>
       <nav className="manager-nav">
         {items.map(i => (
-          <button 
-            key={i.id} 
-            className={tab === i.id ? "active" : ""} 
+          <button
+            key={i.id}
+            className={tab === i.id ? "active" : ""}
             onClick={() => setTab(i.id)}
           >
             {i.icon}
