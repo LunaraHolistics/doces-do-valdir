@@ -21,6 +21,8 @@ const IMG = {
   utilidades: "/utilidades.svg",
 };
 
+const LOGO_STYLE = {width: "auto", objectFit: "contain", borderRadius: 10} as const;
+
 const money = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -186,7 +188,13 @@ function useSettings() {
 function Logo({small = false, onClick}: {small?: boolean; onClick?: () => void}) {
   const inner = (
     <>
-      <img src={IMG.logo} alt="Produtos do Valdir"/>
+      <img
+        src={IMG.logo}
+        alt="Produtos do Valdir"
+        style={small
+          ? {...LOGO_STYLE, height: 46, maxWidth: 74}
+          : {...LOGO_STYLE, height: 58, maxWidth: 92}}
+      />
       <div>
         <strong>Produtos do</strong>
         <b>Valdir</b>
@@ -1579,7 +1587,7 @@ function ProtectedEntry({kind, onUnlock, onBack}: {
   return (
     <div className={`app-shell protected-entry ${manager ? "manager-entry" : "operator-entry"}`}>
       <div className="protected-mark">
-        <img src={IMG.logo}/>
+        <img src={IMG.logo} alt="Produtos do Valdir" style={{...LOGO_STYLE, height: 56, maxWidth: 86}}/>
         <span>{manager ? "central do gestor" : "operação da loja"}</span>
       </div>
       <main className="page">
