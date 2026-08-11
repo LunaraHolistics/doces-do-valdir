@@ -1,4 +1,4 @@
-/* Produtos do Valdir — catálogo real via Supabase + acesso protegido com Supabase Auth. */
+/* Produtos do Valdir — Supabase real: catálogo, pedidos, operação e gestão com CRUD. */
 import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
@@ -26,23 +26,25 @@ const money = (n: number) =>
 
 const moneyFromCents = (cents: number) => money(cents / 100);
 
+const CATNAMES: Record<number, string> = {1: "Doces", 2: "Balas", 3: "Lanches", 4: "Utilidades"};
+
 const MOCK_PRODUCTS = [
-  {id:"p1",category_id:1,name:"Doce de leite cremoso",description:"Pote 400g, textura cremosa e sabor de fazenda.",price_cents:1290,cost_cents:700,stock:18,image_url:IMG.doces},
-  {id:"p2",category_id:1,name:"Paçoca rolha",description:"Pacotinho com 6 unidades.",price_cents:750,cost_cents:400,stock:24,image_url:IMG.doces},
-  {id:"p3",category_id:1,name:"Pé de moleque",description:"Crocante, feito com amendoim selecionado.",price_cents:890,cost_cents:480,stock:14,image_url:IMG.doces},
-  {id:"p4",category_id:1,name:"Doce de amendoim",description:"Doce macio em embalagem individual.",price_cents:690,cost_cents:350,stock:21,image_url:IMG.doces},
-  {id:"p5",category_id:2,name:"Bala sortida",description:"Mix colorido para adoçar o dia.",price_cents:500,cost_cents:250,stock:42,image_url:IMG.balas},
-  {id:"p6",category_id:2,name:"Bala de goma",description:"Pacote 200g com sabores variados.",price_cents:650,cost_cents:320,stock:27,image_url:IMG.balas},
-  {id:"p7",category_id:2,name:"Chiclete hortelã",description:"Cartela com 10 unidades.",price_cents:390,cost_cents:180,stock:36,image_url:IMG.balas},
-  {id:"p8",category_id:2,name:"Pirulito coração",description:"Unidade, sabores sortidos.",price_cents:150,cost_cents:60,stock:56,image_url:IMG.balas},
-  {id:"p9",category_id:3,name:"Salgadinho queijo",description:"Pacote crocante 90g.",price_cents:490,cost_cents:260,stock:33,image_url:IMG.lanches},
-  {id:"p10",category_id:3,name:"Biscoito caseiro",description:"Pacote 250g.",price_cents:790,cost_cents:420,stock:16,image_url:IMG.lanches},
-  {id:"p11",category_id:3,name:"Chocolate ao leite",description:"Barra 90g.",price_cents:690,cost_cents:380,stock:19,image_url:IMG.lanches},
-  {id:"p12",category_id:3,name:"Suco em pó uva",description:"Rende 1 litro.",price_cents:199,cost_cents:90,stock:48,image_url:IMG.lanches},
-  {id:"p13",category_id:4,name:"Pilha AA",description:"Cartela com 2 unidades.",price_cents:1200,cost_cents:700,stock:11,image_url:IMG.utilidades},
-  {id:"p14",category_id:4,name:"Pilha AAA",description:"Cartela com 2 unidades.",price_cents:1200,cost_cents:700,stock:8,image_url:IMG.utilidades},
-  {id:"p15",category_id:4,name:"Caixa de fósforos",description:"Caixa com 40 palitos.",price_cents:350,cost_cents:150,stock:17,image_url:IMG.utilidades},
-  {id:"p16",category_id:4,name:"Vela de aniversário",description:"Kit com 10 unidades.",price_cents:400,cost_cents:180,stock:29,image_url:IMG.utilidades},
+  {id:"p1",category_id:1,name:"Doce de leite cremoso",description:"Pote 400g, textura cremosa e sabor de fazenda.",price_cents:1290,cost_cents:700,stock:18,image_url:IMG.doces,active:true},
+  {id:"p2",category_id:1,name:"Paçoca rolha",description:"Pacotinho com 6 unidades.",price_cents:750,cost_cents:400,stock:24,image_url:IMG.doces,active:true},
+  {id:"p3",category_id:1,name:"Pé de moleque",description:"Crocante, feito com amendoim selecionado.",price_cents:890,cost_cents:480,stock:14,image_url:IMG.doces,active:true},
+  {id:"p4",category_id:1,name:"Doce de amendoim",description:"Doce macio em embalagem individual.",price_cents:690,cost_cents:350,stock:21,image_url:IMG.doces,active:true},
+  {id:"p5",category_id:2,name:"Bala sortida",description:"Mix colorido para adoçar o dia.",price_cents:500,cost_cents:250,stock:42,image_url:IMG.balas,active:true},
+  {id:"p6",category_id:2,name:"Bala de goma",description:"Pacote 200g com sabores variados.",price_cents:650,cost_cents:320,stock:27,image_url:IMG.balas,active:true},
+  {id:"p7",category_id:2,name:"Chiclete hortelã",description:"Cartela com 10 unidades.",price_cents:390,cost_cents:180,stock:36,image_url:IMG.balas,active:true},
+  {id:"p8",category_id:2,name:"Pirulito coração",description:"Unidade, sabores sortidos.",price_cents:150,cost_cents:60,stock:56,image_url:IMG.balas,active:true},
+  {id:"p9",category_id:3,name:"Salgadinho queijo",description:"Pacote crocante 90g.",price_cents:490,cost_cents:260,stock:33,image_url:IMG.lanches,active:true},
+  {id:"p10",category_id:3,name:"Biscoito caseiro",description:"Pacote 250g.",price_cents:790,cost_cents:420,stock:16,image_url:IMG.lanches,active:true},
+  {id:"p11",category_id:3,name:"Chocolate ao leite",description:"Barra 90g.",price_cents:690,cost_cents:380,stock:19,image_url:IMG.lanches,active:true},
+  {id:"p12",category_id:3,name:"Suco em pó uva",description:"Rende 1 litro.",price_cents:199,cost_cents:90,stock:48,image_url:IMG.lanches,active:true},
+  {id:"p13",category_id:4,name:"Pilha AA",description:"Cartela com 2 unidades.",price_cents:1200,cost_cents:700,stock:11,image_url:IMG.utilidades,active:true},
+  {id:"p14",category_id:4,name:"Pilha AAA",description:"Cartela com 2 unidades.",price_cents:1200,cost_cents:700,stock:8,image_url:IMG.utilidades,active:true},
+  {id:"p15",category_id:4,name:"Caixa de fósforos",description:"Caixa com 40 palitos.",price_cents:350,cost_cents:150,stock:17,image_url:IMG.utilidades,active:true},
+  {id:"p16",category_id:4,name:"Vela de aniversário",description:"Kit com 10 unidades.",price_cents:400,cost_cents:180,stock:29,image_url:IMG.utilidades,active:true},
 ];
 
 const MOCK_CATEGORIES = [
@@ -61,15 +63,17 @@ const STATUS_SEQ = [
   "CONCLUÍDO"
 ];
 
+const ALL_STATUSES = [...STATUS_SEQ, "PENDENTE DE ENTREGA"];
+
 const mockOrders = [
-  {id:"DV-1048", name:"Dona Célia", city:"Ribeirão Preto", region:"Zona Norte", total:86.4, status:"NOVO", urgent:true, pay:"PIX · entrada recebida", items:"Doce de leite, paçoca rolha"},
-  {id:"DV-1047", name:"Marcos Lima", city:"Ribeirão Preto", region:"Centro", total:42.9, status:"CONFIRMADO", urgent:false, pay:"Cartão · aguardando entrada", items:"Biscoito, chocolate"},
-  {id:"DV-1046", name:"Ana Paula", city:"Ribeirão Preto", region:"Zona Sul", total:125.9, status:"AGUARDANDO PAGAMENTO", urgent:true, pay:"PIX · aguardando", items:"Kit doces variados"},
-  {id:"DV-1045", name:"João Ferreira", city:"Ribeirão Preto", region:"Zona Norte", total:64.5, status:"SEPARANDO", urgent:false, pay:"Dinheiro", items:"Salgadinho, suco, bala"},
-  {id:"DV-1044", name:"Lúcia Martins", city:"Ribeirão Preto", region:"Zona Leste", total:92, status:"PRONTO PARA ROTA", urgent:false, pay:"PIX · pago total", items:"Paçoca, doces"},
-  {id:"DV-1043", name:"Rafael Souza", city:"Araraquara", region:"Encomenda", total:155.8, status:"PENDENTE DE ENTREGA", urgent:false, pay:"PIX · entrada recebida", items:"Caixa festa"},
-  {id:"DV-1042", name:"Bia Costa", city:"Ribeirão Preto", region:"Centro", total:38.5, status:"CONCLUÍDO", urgent:false, pay:"Dinheiro", items:"Balas e chicletes"},
-  {id:"DV-1041", name:"Carlos Nunes", city:"Ribeirão Preto", region:"Zona Sul", total:74.9, status:"CONCLUÍDO", urgent:false, pay:"Cartão · pago total", items:"Chocolate, biscoito"},
+  {id:"DV-1048", number:"DV-1048", customer_name:"Dona Célia", city:"Ribeirão Preto", region:"Zona Norte", total_cents:8640, status:"NOVO", urgent:true, payment_method:"PIX", payment_confirmed:true, items:"Doce de leite, paçoca rolha"},
+  {id:"DV-1047", number:"DV-1047", customer_name:"Marcos Lima", city:"Ribeirão Preto", region:"Centro", total_cents:4290, status:"CONFIRMADO", urgent:false, payment_method:"CARTAO", payment_confirmed:false, items:"Biscoito, chocolate"},
+  {id:"DV-1046", number:"DV-1046", customer_name:"Ana Paula", city:"Ribeirão Preto", region:"Zona Sul", total_cents:12590, status:"AGUARDANDO PAGAMENTO", urgent:true, payment_method:"PIX", payment_confirmed:false, items:"Kit doces variados"},
+  {id:"DV-1045", number:"DV-1045", customer_name:"João Ferreira", city:"Ribeirão Preto", region:"Zona Norte", total_cents:6450, status:"SEPARANDO", urgent:false, payment_method:"DINHEIRO", payment_confirmed:false, items:"Salgadinho, suco, bala"},
+  {id:"DV-1044", number:"DV-1044", customer_name:"Lúcia Martins", city:"Ribeirão Preto", region:"Zona Leste", total_cents:9200, status:"PRONTO PARA ROTA", urgent:false, payment_method:"PIX", payment_confirmed:true, items:"Paçoca, doces"},
+  {id:"DV-1043", number:"DV-1043", customer_name:"Rafael Souza", city:"Araraquara", region:"Encomenda", total_cents:15580, status:"PENDENTE DE ENTREGA", urgent:false, payment_method:"PIX", payment_confirmed:true, items:"Caixa festa"},
+  {id:"DV-1042", number:"DV-1042", customer_name:"Bia Costa", city:"Ribeirão Preto", region:"Centro", total_cents:3850, status:"CONCLUÍDO", urgent:false, payment_method:"DINHEIRO", payment_confirmed:false, items:"Balas e chicletes"},
+  {id:"DV-1041", number:"DV-1041", customer_name:"Carlos Nunes", city:"Ribeirão Preto", region:"Zona Sul", total_cents:7490, status:"CONCLUÍDO", urgent:false, payment_method:"CARTAO", payment_confirmed:true, items:"Chocolate, biscoito"},
 ];
 
 const routeOrders = [
@@ -111,6 +115,75 @@ const mockHistory = [
 
 const historyTotal = (o: any) =>
   o.items.reduce((s: number, it: any) => s + it.qty * it.price, 0);
+
+// ---------- helpers de pedido ----------
+const orderTotal = (o: any) => (o.total_cents != null ? o.total_cents / 100 : (o.total || 0));
+const orderEntry = (o: any) => (o.entry_cents != null ? o.entry_cents / 100 : orderTotal(o) / 2);
+const orderBalance = (o: any) => (o.balance_cents != null ? o.balance_cents / 100 : orderTotal(o) - orderEntry(o));
+const orderLabel = (o: any) => o.number || o.id;
+const orderName = (o: any) => o.customer_name || "Cliente";
+const statusIdx = (s: string) => STATUS_SEQ.indexOf(s);
+const payLabel = (o: any) => {
+  const m = o.payment_method === "CARTAO" ? "Cartão" : o.payment_method === "PIX" ? "PIX" : "Dinheiro";
+  if (o.payment_method === "DINHEIRO") return "Dinheiro";
+  return o.payment_confirmed ? `${m} · pago/confirmado` : `${m} · aguardando`;
+};
+
+// ---------- hooks de dados ----------
+function useOrders() {
+  const [orders, setOrders] = useState<any[]>([]);
+  useEffect(() => {
+    const load = async () => {
+      if (!hasSupabase) { setOrders(mockOrders); return; }
+      const { data } = await supabase.from("orders").select("*").order("created_at", {ascending: false});
+      setOrders(data || []);
+    };
+    load();
+  }, []);
+  const patch = async (id: string, changes: any) => {
+    if (hasSupabase) await supabase.from("orders").update(changes).eq("id", id);
+    setOrders(os => os.map(o => (o.id === id ? {...o, ...changes} : o)));
+  };
+  return {orders, patch};
+}
+
+function useProducts() {
+  const [prods, setProds] = useState<any[]>([]);
+  useEffect(() => {
+    const load = async () => {
+      if (!hasSupabase) { setProds(MOCK_PRODUCTS); return; }
+      const { data } = await supabase.from("products").select("*").order("name");
+      setProds(data && data.length ? data : MOCK_PRODUCTS);
+    };
+    load();
+  }, []);
+  const patchProd = async (id: string, changes: any) => {
+    if (hasSupabase) await supabase.from("products").update(changes).eq("id", id);
+    setProds(ps => ps.map(p => (p.id === id ? {...p, ...changes} : p)));
+  };
+  const insertProd = async (obj: any) => {
+    if (hasSupabase) {
+      const { data } = await supabase.from("products").insert(obj).select().single();
+      if (data) setProds(ps => [data, ...ps]);
+    } else {
+      setProds(ps => [{...obj, id: "p" + Date.now()}, ...ps]);
+    }
+  };
+  return {prods, patchProd, insertProd};
+}
+
+function useSettings() {
+  const [settings, setSettings] = useState<any>(null);
+  useEffect(() => {
+    if (!hasSupabase) return;
+    supabase.from("settings").select("*").eq("id", 1).maybeSingle().then(({data}) => setSettings(data || null));
+  }, []);
+  const saveSettings = async (form: any) => {
+    if (hasSupabase) await supabase.from("settings").update(form).eq("id", 1);
+    setSettings((s: any) => ({...s, ...form}));
+  };
+  return {settings, saveSettings};
+}
 
 function Logo({small = false, onClick}: {small?: boolean; onClick?: () => void}) {
   const inner = (
@@ -264,8 +337,8 @@ export default function Home() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const {settings} = useSettings();
 
-  // ---- Sessão real (Supabase Auth) ----
   const [authUser, setAuthUser] = useState<string | null>(null);
   const [authRole, setAuthRole] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(!hasSupabase);
@@ -352,7 +425,6 @@ export default function Home() {
   const [managerTab, setManagerTab] = useState("dashboard");
   const [toastText, setToastText] = useState("");
 
-  // Libera automaticamente se já existe sessão com papel correto
   useEffect(() => {
     if (!authReady) return;
     const ok = experience === "manager"
@@ -415,6 +487,7 @@ export default function Home() {
       <ClientApp
         products={products}
         categories={categories}
+        settings={settings}
         clientScreen={clientScreen}
         setClientScreen={setClientScreen}
         selected={selected}
@@ -485,7 +558,7 @@ export default function Home() {
 
 function ClientApp(props: any) {
   const {
-    products, categories, clientScreen, setClientScreen, selected, setSelected,
+    products, categories, settings, clientScreen, setClientScreen, selected, setSelected,
     category, setCategory, query, setQuery, cart, cartItems, cartTotal, add, remove, clear,
     clientAuth, setClientAuth, notify
   } = props;
@@ -722,7 +795,7 @@ function ClientApp(props: any) {
   );
 }
 
-function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrderSent, setOrderDetails, go, notify}: any) {
+function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrderSent, setOrderDetails, go, notify, settings}: any) {
   const [city, setCity] = useState("Ribeirão Preto");
   const [delivery, setDelivery] = useState("Entrega");
   const [urgent, setUrgent] = useState(false);
@@ -738,7 +811,17 @@ function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrder
   const [region, setRegion] = useState("Zona Norte");
   const [submitting, setSubmitting] = useState(false);
 
-  const entry = cartTotal / 2;
+  const pixKey = settings?.pix_key || "doces.valdir@demo.com";
+  const pixHolder = settings?.pix_holder || "Valdir";
+  const pickupEnabled = !settings || settings.pickup_enabled !== false;
+  const pct = payment === "PIX"
+    ? Number(settings?.entry_pct_pix ?? 0.5)
+    : Number(settings?.entry_pct_card ?? 0.5);
+  const araraquaraDate = settings?.araraquara_next_date
+    ? String(settings.araraquara_next_date).split("-").reverse().join("/")
+    : "15/08/2026";
+
+  const entry = cartTotal * pct;
   const needsEntry = payment !== "Dinheiro" && !payFull;
   const amountToPay = needsEntry ? entry : cartTotal;
   const orderNumber = "DV-" + Math.floor(1000 + Math.random() * 9000);
@@ -761,8 +844,8 @@ Itens:
 ${cartItems.map(({p, q}: any) => `• ${q}x ${p.name} — ${money(p.price_cents * q / 100)}`).join("\n")}
 Total: ${money(cartTotal)}
 Pagamento: ${payment}
-Valor a pagar: ${money(amountToPay)} (${payFull && payment !== "Dinheiro" ? "integral" : needsEntry ? "entrada 50%" : "total na entrega/retirada"})
-${needsEntry ? `Saldo: ${money(entry)}` : ""}
+Valor a pagar: ${money(amountToPay)} (${payFull && payment !== "Dinheiro" ? "integral" : needsEntry ? `entrada ${Math.round(pct * 100)}%` : "total na entrega/retirada"})
+${needsEntry ? `Saldo: ${money(cartTotal - entry)}` : ""}
 Urgente: ${urgent ? "🚨 SIM — o quanto antes" : "não"}
 Obs: —`;
 
@@ -781,8 +864,8 @@ Obs: —`;
           address_text: addressLine,
           region: city === "Araraquara" ? "Encomenda" : region,
           urgent,
-          payment_method: payment === "Cartão" ? "CARTAO" : payment,
-          entry_pct: needsEntry ? 0.5 : 1,
+          payment_method: payment === "Cartão" ? "CARTAO" : payment.toUpperCase(),
+          entry_pct: needsEntry ? pct : 1,
           total_cents: Math.round(cartTotal * 100),
           entry_cents: Math.round(amountToPay * 100),
           balance_cents: Math.round((cartTotal - amountToPay) * 100),
@@ -891,20 +974,22 @@ Obs: —`;
                   <b>Entrega</b>
                   <span>Organizamos por região</span>
                 </button>
-                <button
-                  className={delivery === "Retirada" ? "chosen" : ""}
-                  onClick={() => setDelivery("Retirada")}
-                >
-                  <Store/>
-                  <b>Retirada</b>
-                  <span>opção habilitada</span>
-                </button>
+                {pickupEnabled && (
+                  <button
+                    className={delivery === "Retirada" ? "chosen" : ""}
+                    onClick={() => setDelivery("Retirada")}
+                  >
+                    <Store/>
+                    <b>Retirada</b>
+                    <span>opção habilitada</span>
+                  </button>
+                )}
               </div>
             ) : (
               <div className="notice">
                 <MapPin/>
                 <b>Encomenda para Araraquara</b>
-                <span>Próxima encomenda: <strong>15/08/2026</strong></span>
+                <span>Próxima encomenda: <strong>{araraquaraDate}</strong></span>
               </div>
             )}
 
@@ -960,7 +1045,7 @@ Obs: —`;
               <div className="notice">
                 <Store/>
                 <b>Retirada no balcão</b>
-                <span>Endereço de retirada: Rua dos Doces, 123 — referência: praça central (configurável no painel).</span>
+                <span>{settings?.pickup_address || "Endereço de retirada: Rua dos Doces, 123 — referência: praça central."}</span>
               </div>
             )}
 
@@ -1014,8 +1099,8 @@ Obs: —`;
                   className={!payFull ? "chosen" : ""}
                   onClick={() => setPayFull(false)}
                 >
-                  <b>Entrada 50%</b>
-                  <span>{money(entry)} agora, {money(entry)} na entrega</span>
+                  <b>Entrada {Math.round(pct * 100)}%</b>
+                  <span>{money(entry)} agora, {money(cartTotal - entry)} na entrega</span>
                 </button>
                 <button
                   className={payFull ? "chosen" : ""}
@@ -1035,20 +1120,20 @@ Obs: —`;
               {needsEntry && (
                 <>
                   <span>Saldo na entrega</span>
-                  <b>{money(entry)}</b>
+                  <b>{money(cartTotal - entry)}</b>
                 </>
               )}
             </div>
 
             {payment === "PIX" && (
               <div className="pix-box">
-                <span>chave PIX mock</span>
-                <b>doces.valdir@demo.com</b>
-                <small>Titular: Valdir</small>
+                <span>chave PIX</span>
+                <b>{pixKey}</b>
+                <small>Titular: {pixHolder}</small>
                 <button
                   className={pixCopied ? "copied" : ""}
                   onClick={() => {
-                    navigator.clipboard?.writeText("doces.valdir@demo.com");
+                    navigator.clipboard?.writeText(pixKey);
                     setPixCopied(true);
                     notify("Chave PIX copiada com sucesso");
                   }}
@@ -1077,7 +1162,7 @@ Obs: —`;
 
             {payment === "Cartão" && (
               <div className="pix-box">
-                <span>cartão · {payFull ? "integral" : "entrada 50%"}</span>
+                <span>cartão · {payFull ? "integral" : `entrada ${Math.round(pct * 100)}%`}</span>
                 <small>Os dados do cartão serão combinados com Valdir após a confirmação do pedido.</small>
               </div>
             )}
@@ -1103,8 +1188,7 @@ Obs: —`;
               <b>
                 {payment} · {payment === "Dinheiro"
                   ? "total na entrega/retirada"
-                  : payFull ? "integral" : "entrada 50%"
-                }
+                  : payFull ? "integral" : `entrada ${Math.round(pct * 100)}%`}
               </b>
               {urgent && (
                 <>
@@ -1230,7 +1314,7 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
               ? `Pagamento: dinheiro na ${orderDetails.delivery.toLowerCase() === "retirada" ? "retirada" : "entrega"}.`
               : orderDetails.payFull
               ? "Pagamento integral ainda aguarda confirmação."
-              : "A entrada de 50% ainda aguarda confirmação."
+              : "A entrada ainda aguarda confirmação."
             }
           </small>
         </div>
@@ -1238,7 +1322,7 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
         {proofNeeded && !sent && (
           <div className="proof-card">
             <div>
-              <span className="eyebrow">{orderDetails.payFull ? "pagamento integral" : "entrada de 50%"} · {orderDetails.payment}</span>
+              <span className="eyebrow">{orderDetails.payFull ? "pagamento integral" : "entrada"} · {orderDetails.payment}</span>
               <h2>Envie o comprovante</h2>
               <p>Escolha uma foto da câmera ou da galeria. Você verá a imagem antes de enviar para Valdir.</p>
             </div>
@@ -1554,6 +1638,7 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
   onExit: () => void;
   onSignOut: () => void;
 }) {
+  const {orders, patch} = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [routeStage, setRouteStage] = useState<"before" | "ask" | "pending" | "done">("before");
   const [pend, setPend] = useState<Record<string, boolean>>({});
@@ -1566,12 +1651,18 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
     {id: "routes", label: "Entregas", icon: <Truck size={19}/>}
   ];
 
-  const novos = mockOrders.filter(o => o.status === "NOVO").length;
-  const andamento = mockOrders.filter(o =>
+  const novos = orders.filter(o => o.status === "NOVO").length;
+  const andamento = orders.filter(o =>
     ["CONFIRMADO", "AGUARDANDO PAGAMENTO", "SEPARANDO"].includes(o.status)
   ).length;
-  const prontos = mockOrders.filter(o => o.status === "PRONTO PARA ROTA").length;
+  const prontos = orders.filter(o => o.status === "PRONTO PARA ROTA").length;
+  const urgentCount = orders.filter(o => o.urgent).length;
   const pendCount = routeOrders.filter(o => pend[o.id]).length;
+
+  const applyPatch = async (o: any, changes: any) => {
+    await patch(o.id, changes);
+    setSelectedOrder(s => (s && s.id === o.id ? {...s, ...changes} : s));
+  };
 
   if (screen === "product") {
     return (
@@ -1626,7 +1717,7 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
           <div className="urgent-banner">
             <Zap/>
             <div>
-              <b>{mockOrders.filter(o => o.urgent).length} pedidos urgentes</b>
+              <b>{urgentCount} pedidos urgentes</b>
               <span>Olhe primeiro para eles</span>
             </div>
           </div>
@@ -1635,7 +1726,7 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
             <span>EM ANDAMENTO <i>{andamento}</i></span>
             <span>PRONTOS <i>{prontos}</i></span>
           </div>
-          {mockOrders.slice(0, 5).map(o => (
+          {orders.slice(0, 8).map(o => (
             <div
               key={o.id}
               className={`op-order ${o.urgent ? "urgent-order" : ""}`}
@@ -1643,12 +1734,12 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
             >
               {o.urgent && <span className="urgent-label">🚨 URGENTE</span>}
               <div>
-                <b>{o.name}</b>
-                <span>{o.id} · {o.region}</span>
-                <small>{o.items}</small>
+                <b>{orderName(o)}</b>
+                <span>{orderLabel(o)} · {o.region}</span>
+                <small>{o.items || ""}</small>
               </div>
               <div>
-                <strong>{money(o.total)}</strong>
+                <strong>{money(orderTotal(o))}</strong>
                 <span className="status-pill">{o.status}</span>
               </div>
             </div>
@@ -1660,40 +1751,54 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
   }
 
   if (screen === "order" && selectedOrder) {
+    const o = selectedOrder;
+    const idx = Math.max(0, statusIdx(o.status));
+    const pending = o.status === "PENDENTE DE ENTREGA";
     return (
       <div className="app-shell operator">
-        <Header title={selectedOrder.id} back onBack={() => setScreen("orders")} onLogo={() => setScreen("home")}/>
+        <Header title={orderLabel(o)} back onBack={() => setScreen("orders")} onLogo={() => setScreen("home")}/>
         <main className="page">
           <div className="op-detail-head">
-            {selectedOrder.urgent && <span className="urgent-label">🚨 PEDIDO URGENTE</span>}
-            <h1>{selectedOrder.name}</h1>
-            <span>{selectedOrder.city} · {selectedOrder.region}</span>
+            {o.urgent && <span className="urgent-label">🚨 PEDIDO URGENTE</span>}
+            {pending && <span className="urgent-label">PENDENTE DE ENTREGA</span>}
+            <h1>{orderName(o)}</h1>
+            <span>{o.city} · {o.region}</span>
           </div>
           <div className="summary">
             <span>Total</span>
-            <b>{money(selectedOrder.total)}</b>
-            <span>Entrada 50%</span>
-            <b>{money(selectedOrder.total / 2)}</b>
+            <b>{money(orderTotal(o))}</b>
+            <span>Entrada</span>
+            <b>{money(orderEntry(o))}</b>
             <span>Saldo</span>
-            <b>{money(selectedOrder.total / 2)}</b>
+            <b>{money(orderBalance(o))}</b>
             <span>Pagamento</span>
-            <b>{selectedOrder.pay}</b>
+            <b>{payLabel(o)}</b>
           </div>
           <div className="timeline">
             <b>Fluxo do pedido</b>
             {STATUS_SEQ.map((s, i) => (
-              <div className={i < 3 ? "done" : i === 3 ? "current" : ""} key={s}>
-                <i>{i < 3 ? <Check size={13}/> : i + 1}</i>
+              <div className={i < idx ? "done" : i === idx ? "current" : ""} key={s}>
+                <i>{i < idx ? <Check size={13}/> : i + 1}</i>
                 <span>{s}</span>
               </div>
             ))}
           </div>
-          <Button onClick={() => toast.success("Entrada de 50% confirmada", {
-            description: "Pedido avançou para SEPARANDO"
-          })}>
-            Confirmar entrada 50%
-          </Button>
-          <Button variant="soft" onClick={() => toast.success("Pagamento total confirmado")}>
+          {statusIdx(o.status) < 3 && (
+            <Button onClick={async () => {
+              await applyPatch(o, {status: "SEPARANDO", payment_confirmed: true});
+              toast.success("Entrada confirmada", {description: "Pedido avançou para SEPARANDO"});
+            }}>
+              Confirmar entrada 50%
+            </Button>
+          )}
+          <Button variant="soft" onClick={async () => {
+            await applyPatch(o, {
+              status: statusIdx(o.status) < 3 ? "SEPARANDO" : o.status,
+              payment_confirmed: true,
+              balance_cents: 0
+            });
+            toast.success("Pagamento total confirmado");
+          }}>
             Confirmar pagamento total
           </Button>
         </main>
@@ -1821,10 +1926,10 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
             <b>Novo produto</b>
             <span>tirar foto e cadastrar</span>
           </button>
-          <button onClick={() => toast.success("Meus produtos: 16 no catálogo")}>
+          <button onClick={() => toast.success("Meus produtos no catálogo")}>
             <Package/>
             <b>Meus produtos</b>
-            <span>16 disponíveis</span>
+            <span>ver no painel do gestor</span>
           </button>
           <button onClick={() => setScreen("orders")}>
             <ClipboardList/>
@@ -1860,6 +1965,16 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
   onExit: () => void;
   onSignOut: () => void;
 }) {
+  const {orders, patch} = useOrders();
+  const {prods, patchProd, insertProd} = useProducts();
+  const {settings, saveSettings} = useSettings();
+  const [edit, setEdit] = useState<any | null>(null);
+  const [form, setForm] = useState<any>(null);
+
+  useEffect(() => {
+    if (settings && !form) setForm({...settings});
+  }, [settings, form]);
+
   const items = [
     {id: "dashboard", label: "Visão geral", icon: <LayoutDashboard/>},
     {id: "products", label: "Produtos", icon: <Package/>},
@@ -1874,6 +1989,36 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
 
   const title = items.find(i => i.id === tab)?.label || "Dashboard";
 
+  const totalVendas = orders.reduce((s, o) => s + orderTotal(o), 0);
+  const novosCount = orders.filter(o => o.status === "NOVO").length;
+  const urgentCount = orders.filter(o => o.urgent).length;
+  const pendCount = orders.filter(o => o.status === "PENDENTE DE ENTREGA").length;
+  const lowStock = prods.filter(p => p.stock < 10).length;
+
+  const saveEdit = async () => {
+    const price = Math.round(parseFloat(edit.price || "0") * 100);
+    const cost = Math.round(parseFloat(edit.cost || "0") * 100);
+    const payload = {
+      name: edit.name,
+      description: edit.description || "",
+      price_cents: price,
+      cost_cents: cost,
+      stock: parseInt(edit.stock || "0", 10),
+      image_url: edit.image_url,
+      category_id: parseInt(edit.category_id || "1", 10),
+      active: edit.active !== false
+    };
+    if (edit.isNew) {
+      delete (payload as any).isNew;
+      await insertProd(payload);
+      toast.success("Produto criado");
+    } else {
+      await patchProd(edit.id, payload);
+      toast.success("Produto atualizado");
+    }
+    setEdit(null);
+  };
+
   return (
     <div className="app-shell manager">
       <Header title={title} subtitle="Painel gestor" onLogo={() => setTab("dashboard")}/>
@@ -1882,50 +2027,26 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
           <>
             <div className="manager-welcome">
               <div>
-                <span>terça-feira, 11 de agosto</span>
+                <span>quarta-feira, 12 de agosto</span>
                 <h1>Bom dia, gestor.</h1>
               </div>
               <div className="avatar orange">V</div>
             </div>
             <div className="metric-grid">
-              <Metric label="Vendas do mês" value="R$ 8.420" trend="+12%"/>
-              <Metric label="Pedidos" value="48" trend="+8 novos"/>
+              <Metric label="Vendas (pedidos)" value={money(totalVendas)} trend={`${orders.length} pedidos`}/>
+              <Metric label="Pedidos novos" value={String(novosCount)} trend={`${urgentCount} urgentes`}/>
               <Metric label="Lucro bruto" value="R$ 3.186" trend="37,8% margem"/>
-              <Metric label="Estoque baixo" value="3" trend="ver produtos" alert/>
-            </div>
-            <div className="dashboard-card">
-              <div className="section-head">
-                <h2>Vendas por semana</h2>
-                <span className="muted">agosto 2026</span>
-              </div>
-              <div className="bars">
-                <i style={{height: "42%"}}/>
-                <i style={{height: "64%"}}/>
-                <i style={{height: "50%"}}/>
-                <i style={{height: "78%"}}/>
-                <i style={{height: "58%"}}/>
-                <i style={{height: "88%"}}/>
-                <i style={{height: "70%"}}/>
-              </div>
-              <div className="days">
-                <span>seg</span>
-                <span>ter</span>
-                <span>qua</span>
-                <span>qui</span>
-                <span>sex</span>
-                <span>sáb</span>
-                <span>dom</span>
-              </div>
+              <Metric label="Estoque baixo" value={String(lowStock)} trend="ver produtos" alert={lowStock > 0}/>
             </div>
             <div className="split-cards">
               <div>
                 <Zap/>
-                <b>{mockOrders.filter(o => o.urgent).length} urgentes</b>
+                <b>{urgentCount} urgentes</b>
                 <span>pedidos para olhar</span>
               </div>
               <div>
                 <Truck/>
-                <b>1 pendência</b>
+                <b>{pendCount} pendência(s)</b>
                 <span>de entrega</span>
               </div>
             </div>
@@ -1933,44 +2054,167 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
         )}
 
         {tab === "products" && (
-          <ManagerList
-            title="Produtos"
-            subtitle="16 itens no catálogo"
-            rows={MOCK_PRODUCTS.slice(0, 7).map(p => ({
-              name: p.name,
-              meta: `${p.stock} em estoque · ${MOCK_CATEGORIES.find(c => c.id === p.category_id)?.name}`,
-              value: moneyFromCents(p.price_cents)
-            }))}
-            action="Novo produto"
-          />
+          <>
+            <div className="list-head">
+              <div>
+                <span className="eyebrow">gestão</span>
+                <h1>Produtos</h1>
+                <p>{prods.filter(p => p.active !== false).length} ativos no catálogo</p>
+              </div>
+              <Button onClick={() => setEdit({
+                isNew: true,
+                name: "",
+                description: "",
+                price: "",
+                cost: "",
+                stock: "0",
+                image_url: IMG.doces,
+                category_id: 1,
+                active: true
+              })}>
+                <Plus size={16}/>
+                Novo produto
+              </Button>
+            </div>
+            <div className="manager-list">
+              {prods.map(p => (
+                <div className="manager-row" key={p.id}>
+                  <div className="mini-avatar">{p.name[0]}</div>
+                  <div>
+                    <b>{p.name}{p.active === false ? " (inativo)" : ""}</b>
+                    <span>{p.stock} un · {CATNAMES[p.category_id] || "Outros"}</span>
+                  </div>
+                  <strong>{moneyFromCents(p.price_cents)}</strong>
+                  <button
+                    className="icon-btn"
+                    style={{width: 32, height: 32}}
+                    title="Editar"
+                    onClick={() => setEdit({
+                      ...p,
+                      price: (p.price_cents / 100).toFixed(2),
+                      cost: (p.cost_cents / 100).toFixed(2),
+                      stock: String(p.stock)
+                    })}
+                  >
+                    <Pencil size={14}/>
+                  </button>
+                  <button
+                    className="icon-btn"
+                    style={{width: 32, height: 32, color: "#bd463b"}}
+                    title="Desativar"
+                    onClick={() => {
+                      if (window.confirm(`Desativar ${p.name} do catálogo?`)) {
+                        patchProd(p.id, {active: false});
+                        toast.success("Produto desativado");
+                      }
+                    }}
+                  >
+                    <X size={14}/>
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {edit && (
+              <div className="settings-card" style={{marginTop: 14}}>
+                <span className="eyebrow">{edit.isNew ? "novo produto" : "editar produto"}</span>
+                <label>Nome<input value={edit.name} onChange={e => setEdit({...edit, name: e.target.value})}/></label>
+                <label>Descrição<input value={edit.description} onChange={e => setEdit({...edit, description: e.target.value})}/></label>
+                <div className="two-cols">
+                  <label>Preço (R$)<input value={edit.price} onChange={e => setEdit({...edit, price: e.target.value})}/></label>
+                  <label>Custo (R$)<input value={edit.cost} onChange={e => setEdit({...edit, cost: e.target.value})}/></label>
+                </div>
+                <div className="two-cols">
+                  <label>Estoque<input value={edit.stock} onChange={e => setEdit({...edit, stock: e.target.value})}/></label>
+                  <label>
+                    Categoria
+                    <select value={edit.category_id} onChange={e => setEdit({...edit, category_id: e.target.value})}>
+                      {[1, 2, 3, 4].map(i => <option key={i} value={i}>{CATNAMES[i]}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  Imagem
+                  <select value={edit.image_url} onChange={e => setEdit({...edit, image_url: e.target.value})}>
+                    <option value={IMG.doces}>Doces</option>
+                    <option value={IMG.balas}>Balas</option>
+                    <option value={IMG.lanches}>Lanches</option>
+                    <option value={IMG.utilidades}>Utilidades</option>
+                  </select>
+                </label>
+                <label style={{display: "flex", alignItems: "center", gap: 8}}>
+                  <input
+                    type="checkbox"
+                    style={{width: "auto", height: "auto"}}
+                    checked={edit.active !== false}
+                    onChange={e => setEdit({...edit, active: e.target.checked})}
+                  />
+                  Ativo no catálogo
+                </label>
+                <Button onClick={saveEdit}>Salvar <Check size={16}/></Button>
+                <Button variant="ghost" onClick={() => setEdit(null)}>Cancelar</Button>
+              </div>
+            )}
+          </>
         )}
 
         {tab === "stock" && (
-          <ManagerList
-            title="Estoque"
-            subtitle="Acompanhe o que precisa de atenção"
-            rows={MOCK_PRODUCTS.slice(0, 6).map(p => ({
-              name: p.name,
-              meta: `mínimo 10 unidades`,
-              value: `${p.stock} un.`,
-              alert: p.stock < 10
-            }))}
-            action="Ajustar estoque"
-          />
+          <>
+            <div className="list-head">
+              <div>
+                <span className="eyebrow">gestão</span>
+                <h1>Estoque</h1>
+                <p>ajuste rápido com + / −</p>
+              </div>
+            </div>
+            <div className="manager-list">
+              {prods.filter(p => p.active !== false).map(p => (
+                <div className="manager-row" key={p.id}>
+                  <div className="mini-avatar">{p.name[0]}</div>
+                  <div>
+                    <b>{p.name}</b>
+                    <span>mínimo 10 unidades</span>
+                  </div>
+                  <strong className={p.stock < 10 ? "red" : ""}>{p.stock} un.</strong>
+                  <button className="icon-btn" style={{width: 32, height: 32}} onClick={() => patchProd(p.id, {stock: Math.max(0, p.stock - 1)})}>−</button>
+                  <button className="icon-btn" style={{width: 32, height: 32}} onClick={() => patchProd(p.id, {stock: p.stock + 1})}>+</button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {tab === "orders" && (
-          <ManagerList
-            title="Pedidos"
-            subtitle="8 pedidos recentes"
-            rows={mockOrders.map(o => ({
-              name: `${o.id} · ${o.name}`,
-              meta: `${o.city} · ${o.pay}`,
-              value: money(o.total),
-              alert: o.urgent
-            }))}
-            action="Filtrar status"
-          />
+          <>
+            <div className="list-head">
+              <div>
+                <span className="eyebrow">gestão</span>
+                <h1>Pedidos</h1>
+                <p>{orders.length} pedidos · troque o status direto na linha</p>
+              </div>
+            </div>
+            <div className="manager-list">
+              {orders.map(o => (
+                <div className="manager-row" key={o.id}>
+                  <div className="mini-avatar">{orderName(o)[0]}</div>
+                  <div>
+                    <b>{orderLabel(o)} · {orderName(o)}{o.urgent ? " 🚨" : ""}</b>
+                    <span>{o.city} · {payLabel(o)} · {money(orderTotal(o))}</span>
+                  </div>
+                  <select
+                    style={{height: 34, fontSize: 11, width: 170}}
+                    value={o.status}
+                    onChange={e => {
+                      patch(o.id, {status: e.target.value});
+                      toast.success(`Status → ${e.target.value}`);
+                    }}
+                  >
+                    {ALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {tab === "clients" && (
@@ -2008,16 +2252,56 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
             <p>Próxima data definida para reunir os pedidos dessa cidade.</p>
             <div className="date-box">
               <MapPin/>
-              <b>15/08/2026</b>
+              <b>
+                {settings?.araraquara_next_date
+                  ? String(settings.araraquara_next_date).split("-").reverse().join("/")
+                  : "15/08/2026"}
+              </b>
               <span>próxima encomenda</span>
             </div>
-            <Button onClick={() => toast.success("Data de encomenda editada no mock")}>
+            <Button onClick={() => toast.success("Edite a data em Configurações")}>
               Alterar data <Pencil size={16}/>
             </Button>
           </div>
         )}
 
-        {tab === "settings" && <SettingsPanel/>}
+        {tab === "settings" && form && (
+          <div className="settings-card">
+            <span className="eyebrow">administração</span>
+            <h1>Configurações</h1>
+            <label>Chave PIX<input value={form.pix_key || ""} onChange={e => setForm({...form, pix_key: e.target.value})}/></label>
+            <label>Nome do titular<input value={form.pix_holder || ""} onChange={e => setForm({...form, pix_holder: e.target.value})}/></label>
+            <label>WhatsApp do Valdir<input value={form.whatsapp_number || ""} onChange={e => setForm({...form, whatsapp_number: e.target.value})}/></label>
+            <label>Endereço de retirada<input value={form.pickup_address || ""} onChange={e => setForm({...form, pickup_address: e.target.value})}/></label>
+            <div className="two-cols">
+              <label>Entrada PIX (%)<input type="number" step="0.05" min="0" max="1" value={form.entry_pct_pix ?? 0.5} onChange={e => setForm({...form, entry_pct_pix: parseFloat(e.target.value)})}/></label>
+              <label>Entrada cartão (%)<input type="number" step="0.05" min="0" max="1" value={form.entry_pct_card ?? 0.5} onChange={e => setForm({...form, entry_pct_card: parseFloat(e.target.value)})}/></label>
+            </div>
+            <label>
+              Regra do dinheiro
+              <select value={form.cash_rule || "TOTAL_NA_ENTREGA"} onChange={e => setForm({...form, cash_rule: e.target.value})}>
+                <option value="TOTAL_NA_ENTREGA">Total na entrega/retirada</option>
+                <option value="ENTRADA_50">Exigir entrada de 50%</option>
+              </select>
+            </label>
+            <label>Próxima data Araraquara<input type="date" value={form.araraquara_next_date || ""} onChange={e => setForm({...form, araraquara_next_date: e.target.value})}/></label>
+            <label style={{display: "flex", alignItems: "center", gap: 8}}>
+              <input
+                type="checkbox"
+                style={{width: "auto", height: "auto"}}
+                checked={form.pickup_enabled !== false}
+                onChange={e => setForm({...form, pickup_enabled: e.target.checked})}
+              />
+              Retirada habilitada
+            </label>
+            <Button onClick={async () => {
+              await saveSettings(form);
+              toast.success("Configurações salvas");
+            }}>
+              Salvar configurações <Check size={16}/>
+            </Button>
+          </div>
+        )}
       </main>
       <nav className="manager-nav">
         {items.map(i => (
@@ -2120,57 +2404,6 @@ function Reports() {
         <span>1. Doce de leite <strong>R$ 486</strong></span>
         <span>2. Paçoca rolha <strong>R$ 320</strong></span>
         <span>3. Chocolate <strong>R$ 218</strong></span>
-      </div>
-    </div>
-  );
-}
-
-function SettingsPanel() {
-  return (
-    <div>
-      <span className="eyebrow">administração</span>
-      <h1>Configurações</h1>
-      <div className="settings-list">
-        <div>
-          <WalletCards/>
-          <span>
-            <b>Chave PIX</b>
-            <small>doces.valdir@demo.com</small>
-          </span>
-          <ChevronRight/>
-        </div>
-        <div>
-          <UserRound/>
-          <span>
-            <b>Nome do titular</b>
-            <small>Valdir de Souza</small>
-          </span>
-          <ChevronRight/>
-        </div>
-        <div>
-          <HeartHandshake/>
-          <span>
-            <b>WhatsApp de Valdir</b>
-            <small>configurado no mock</small>
-          </span>
-          <ChevronRight/>
-        </div>
-        <div>
-          <Store/>
-          <span>
-            <b>Retirada</b>
-            <small>ativa</small>
-          </span>
-          <ChevronRight/>
-        </div>
-        <div>
-          <Users/>
-          <span>
-            <b>Usuários e permissões</b>
-            <small>1 gestor · 2 operadores</small>
-          </span>
-          <ChevronRight/>
-        </div>
       </div>
     </div>
   );
