@@ -1,20 +1,23 @@
-/* Direção Quitanda Solar: neo-artesanal brasileiro, fundo creme, terracota goiabada, Fraunces + DM Sans, ações simples e mobile-first. */
+/* Doces do Valdir — protótipo navegável. Verde protagonista; terracota apenas para urgência/pendências. */
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  ArrowLeft, ArrowRight, BarChart3, Bell, Camera, Check, ChevronDown, ChevronRight, CircleUserRound, ClipboardList,
-  Copy, CreditCard, DollarSign, ExternalLink, HeartHandshake, Home as HomeIcon, Image as ImageIcon, LayoutDashboard, MapPin, Menu,
-  Package, Pencil, Plus, Search, Settings, ShoppingBag, ShoppingCart, Store, Truck, UserRound, Users,
-  WalletCards, X, Zap
+  ArrowLeft, ArrowRight, BarChart3, Camera, Check, ChevronRight, ClipboardList,
+  Copy, CreditCard, DollarSign, HeartHandshake, Home as HomeIcon, Image as ImageIcon, 
+  LayoutDashboard, MapPin, Package, Pencil, Plus, Search, Settings, ShoppingBag, 
+  ShoppingCart, Store, Trash2, Truck, UserRound, Users, WalletCards, X, Zap
 } from "lucide-react";
 
 const IMG = {
   hero: "/manus-storage/hero-doces_8c4d1eff.jpg",
   snacks: "/manus-storage/snacks-doces_a4125768.jpg",
   utility: "/manus-storage/utilidades-balcao_63f266d3.jpg",
-  logo: "/manus-storage/logo-doces-do-valdir_19759b79.png",
+  logo: "/logo-valdir.png",
 };
-const money = (n:number) => n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+
+const money = (n: number) => 
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 const products = [
   ["p1","Doce de leite cremoso","Doces","12,90",IMG.hero,"Pote 400g, textura cremosa e sabor de fazenda.",18],
   ["p2","Paçoca rolha","Doces","7,50",IMG.hero,"Pacotinho com 6 unidades.",24],
@@ -33,8 +36,19 @@ const products = [
   ["p15","Caixa de fósforos","Utilidades","3,50",IMG.utility,"Caixa com 40 palitos.",17],
   ["p16","Vela de aniversário","Utilidades","4,00",IMG.utility,"Kit com 10 unidades.",29],
 ] as const;
+
 type Product = typeof products[number];
-type Cart = Record<string,number>;
+type Cart = Record<string, number>;
+
+const STATUS_SEQ = [
+  "NOVO",
+  "CONFIRMADO", 
+  "AGUARDANDO PAGAMENTO",
+  "SEPARANDO",
+  "PRONTO PARA ROTA",
+  "CONCLUÍDO"
+];
+
 const mockOrders = [
   {id:"DV-1048", name:"Dona Célia", city:"Ribeirão Preto", region:"Zona Norte", total:86.4, status:"NOVO", urgent:true, pay:"PIX · entrada recebida", items:"Doce de leite, paçoca rolha"},
   {id:"DV-1047", name:"Marcos Lima", city:"Ribeirão Preto", region:"Centro", total:42.9, status:"CONFIRMADO", urgent:false, pay:"Cartão · aguardando entrada", items:"Biscoito, chocolate"},
@@ -46,63 +60,1758 @@ const mockOrders = [
   {id:"DV-1041", name:"Carlos Nunes", city:"Ribeirão Preto", region:"Zona Sul", total:74.9, status:"CONCLUÍDO", urgent:false, pay:"Cartão · pago total", items:"Chocolate, biscoito"},
 ];
 
-function Logo({small=false}:{small?:boolean}) { return <div className="brand"><img src={IMG.logo} /><div><strong>Doces do</strong><b>Valdir</b></div></div> }
-function Button({children,onClick,variant="primary",className="",disabled=false}:{children:React.ReactNode,onClick?:()=>void,variant?:string,className?:string,disabled?:boolean}) { return <button disabled={disabled} onClick={onClick} className={`btn btn-${variant} ${className}`}>{children}</button> }
-function Header({title,back,onBack,cart=0,goCart,subtitle}:{title?:string,back?:boolean,onBack?:()=>void,cart?:number,goCart?:()=>void,subtitle?:string}) { return <header className="topbar">{back ? <button className="icon-btn" onClick={onBack}><ArrowLeft size={21}/></button> : <Logo small/>}<div className="head-title">{title && <strong>{title}</strong>}{subtitle && <span>{subtitle}</span>}</div>{goCart ? <button className="cart-icon" onClick={goCart}><ShoppingCart size={21}/>{cart>0&&<i>{cart}</i>}</button> : <button className="icon-btn"><Bell size={20}/></button>}</header> }
-function BottomNav({items,active,onSelect}:{items:{id:string,label:string,icon:any}[],active:string,onSelect:(id:string)=>void}) { return <nav className="bottom-nav">{items.map(i=><button key={i.id} className={active===i.id?"active":""} onClick={()=>onSelect(i.id)}><i>{i.icon}</i><span>{i.label}</span></button>)}</nav> }
-function WhatsApp({text="Olá, Valdir! Estou vendo os produtos do Doces do Valdir e gostaria de tirar uma dúvida."}:{text?:string}) { return <Button variant="whatsapp" onClick={()=>toast.success("WhatsApp simulado",{description:text})}><HeartHandshake size={18}/> Falar com Valdir</Button> }
-function ProductCard({p,qty,onAdd,onOpen}:{p:Product,qty:number,onAdd:()=>void,onOpen:()=>void}) { return <article className="product-card" onClick={onOpen}><div className="product-img"><img src={p[4]}/>{p[0]==="p1"&&<span className="tag">favorito da casa</span>}</div><div className="product-info"><h3>{p[1]}</h3><span className="stock">{p[6]} disponíveis</span><strong>{money(Number(p[3].replace(",",".")))}</strong><div className="card-action" onClick={e=>{e.stopPropagation();onAdd()}}>{qty>0 ? <><button onClick={e=>{e.stopPropagation();}}>-</button><b>{qty}</b><button onClick={e=>{e.stopPropagation();onAdd()}}>+</button></> : <><Plus size={17}/> adicionar</>}</div></div></article> }
+const mockHistory = [
+  {
+    id: "DV-1038", 
+    date: "08 ago 2026", 
+    status: "CONCLUÍDO", 
+    items: [
+      {id:"p1", qty:2, price:12.9},
+      {id:"p2", qty:2, price:7.5},
+      {id:"p5", qty:4, price:5}
+    ]
+  },
+  {
+    id: "DV-0982", 
+    date: "22 jul 2026", 
+    status: "CONCLUÍDO", 
+    items: [
+      {id:"p11", qty:3, price:6.9},
+      {id:"p10", qty:2, price:7.9}
+    ]
+  },
+];
+
+const historyTotal = (o: any) => 
+  o.items.reduce((s: number, it: any) => s + it.qty * it.price, 0);
+
+function Logo({small = false, onClick}: {small?: boolean; onClick?: () => void}) {
+  const inner = (
+    <>
+      <img src={IMG.logo} alt="Doces do Valdir"/>
+      <div>
+        <strong>Doces do</strong>
+        <b>Valdir</b>
+      </div>
+    </>
+  );
+  
+  return onClick 
+    ? <button className="brand brand-btn" onClick={onClick} aria-label="Voltar para a página inicial">{inner}</button>
+    : <div className="brand">{inner}</div>;
+}
+
+function Button({children, onClick, variant = "primary", className = "", disabled = false}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: string;
+  className?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button 
+      disabled={disabled} 
+      onClick={onClick} 
+      className={`btn btn-${variant} ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Header({title, back, onBack, cart = 0, goCart, subtitle, onLogo}: {
+  title?: string;
+  back?: boolean;
+  onBack?: () => void;
+  cart?: number;
+  goCart?: () => void;
+  subtitle?: string;
+  onLogo?: () => void;
+}) {
+  return (
+    <header className="topbar">
+      {back 
+        ? <button className="icon-btn" onClick={onBack} aria-label="Voltar">
+            <ArrowLeft size={21}/>
+          </button>
+        : <Logo small onClick={onLogo}/>
+      }
+      <div className="head-title">
+        {title && <strong>{title}</strong>}
+        {subtitle && <span>{subtitle}</span>}
+      </div>
+      {goCart 
+        ? <button className="cart-icon" onClick={goCart} aria-label="Abrir carrinho">
+            <ShoppingCart size={21}/>
+            {cart > 0 && <i>{cart}</i>}
+          </button>
+        : <span className="icon-btn" aria-hidden="true"/>
+      }
+    </header>
+  );
+}
+
+function Stepper({current}: {current: number}) {
+  return (
+    <div className="stepper">
+      <span className={current > 1 ? "done" : current === 1 ? "current" : ""}>1</span>
+      <i/>
+      <span className={current > 2 ? "done" : current === 2 ? "current" : ""}>2</span>
+      <i/>
+      <span className={current > 3 ? "done" : current === 3 ? "current" : ""}>3</span>
+    </div>
+  );
+}
+
+function BottomNav({items, active, onSelect}: {
+  items: {id: string; label: string; icon: any}[];
+  active: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <nav className="bottom-nav">
+      {items.map(i => (
+        <button 
+          key={i.id} 
+          className={active === i.id ? "active" : ""} 
+          onClick={() => onSelect(i.id)}
+        >
+          <i>{i.icon}</i>
+          <span>{i.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function WhatsApp({text = "Olá, Valdir! Estou vendo os produtos do Doces do Valdir e gostaria de tirar uma dúvida."}: {
+  text?: string;
+}) {
+  return (
+    <Button 
+      variant="whatsapp" 
+      onClick={() => toast.success("WhatsApp simulado", {description: text})}
+    >
+      <HeartHandshake size={18}/>
+      Falar com Valdir
+    </Button>
+  );
+}
+
+function ProductCard({p, qty, onAdd, onOpen}: {
+  p: Product;
+  qty: number;
+  onAdd: () => void;
+  onOpen: () => void;
+}) {
+  return (
+    <article className="product-card" onClick={onOpen}>
+      <div className="product-img">
+        <img src={p[4]}/>
+        {p[0] === "p1" && <span className="tag">favorito da casa</span>}
+      </div>
+      <div className="product-info">
+        <h3>{p[1]}</h3>
+        <span className="stock">{p[6]} disponíveis</span>
+        <strong>{money(Number(p[3].replace(",", ".")))}</strong>
+        <div className="card-action" onClick={e => {e.stopPropagation(); onAdd()}}>
+          {qty > 0 ? (
+            <>
+              <button onClick={e => {e.stopPropagation();}}>-</button>
+              <b>{qty}</b>
+              <button onClick={e => {e.stopPropagation(); onAdd()}}>+</button>
+            </>
+          ) : (
+            <>
+              <Plus size={17}/>
+              adicionar
+            </>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export default function Home() {
   const initialPath = typeof window !== "undefined" ? window.location.pathname : "/";
-  const [experience,setExperience] = useState<"client"|"operator"|"manager">(initialPath.startsWith("/operacao") ? "operator" : initialPath.startsWith("/gestao") ? "manager" : "client");
-  const [accessGranted,setAccessGranted] = useState(!initialPath.startsWith("/operacao") && !initialPath.startsWith("/gestao"));
-  const [clientScreen,setClientScreen] = useState("home");
-  const [selected,setSelected] = useState<Product|null>(null);
-  const [category,setCategory] = useState("Todos");
-  const [query,setQuery] = useState("");
-  const [cart,setCart] = useState<Cart>({p1:1,p5:2});
-  const [checkoutStep,setCheckoutStep] = useState(1);
-  const [orderSent,setOrderSent] = useState(false);
-  const [orderDetails,setOrderDetails] = useState<{payment:string;delivery:string;customer:string;confirmed:boolean;proof:string|null;total:number}>({payment:"PIX",delivery:"Entrega",customer:"João Silva",confirmed:false,proof:null,total:0});
-  const [clientAuth,setClientAuth] = useState(false);
-  const [opScreen,setOpScreen] = useState("home");
-  const [managerTab,setManagerTab] = useState("dashboard");
-  const [toastText,setToastText] = useState("");
-  const cartItems = useMemo(()=>Object.entries(cart).filter(([,q])=>q>0).map(([id,q])=>({p:products.find(p=>p[0]===id)!,q})),[cart]);
-  const cartTotal = cartItems.reduce((s,{p,q})=>s+Number(p[3].replace(",","."))*q,0);
-  const add = (id:string)=>setCart(c=>({...c,[id]:(c[id]||0)+1}));
-  const remove = (id:string)=>setCart(c=>({...c,[id]:Math.max(0,(c[id]||0)-1)}));
-  const notify=(text:string)=>{setToastText(text);setTimeout(()=>setToastText(""),2600)};
-  const leaveProtectedArea=()=>{window.history.pushState({}, "", "/");setAccessGranted(true);setExperience("client")};
-  if(experience==="client") return <ClientApp {...{clientScreen,setClientScreen,selected,setSelected,category,setCategory,query,setQuery,cart,cartItems,cartTotal,add,remove,checkoutStep,setCheckoutStep,orderSent,setOrderSent,orderDetails,setOrderDetails,clientAuth,setClientAuth,notify,onExit:leaveProtectedArea}}/>;
-  if(!accessGranted) return <ProtectedEntry kind={experience} onUnlock={()=>setAccessGranted(true)} onBack={leaveProtectedArea}/>;
-  if(experience==="operator") return <OperatorApp screen={opScreen} setScreen={setOpScreen} onExit={leaveProtectedArea} />;
-  return <ManagerApp tab={managerTab} setTab={setManagerTab} onExit={leaveProtectedArea} />;
+  const [experience, setExperience] = useState<"client" | "operator" | "manager">(
+    initialPath.startsWith("/operacao") ? "operator" : 
+    initialPath.startsWith("/gestao") ? "manager" : "client"
+  );
+  const [accessGranted, setAccessGranted] = useState(
+    !initialPath.startsWith("/operacao") && !initialPath.startsWith("/gestao")
+  );
+  const [clientScreen, setClientScreen] = useState("home");
+  const [selected, setSelected] = useState<Product | null>(null);
+  const [category, setCategory] = useState("Todos");
+  const [query, setQuery] = useState("");
+  const [cart, setCart] = useState<Cart>({p1: 1, p5: 2});
+  const [checkoutStep, setCheckoutStep] = useState(1);
+  const [orderSent, setOrderSent] = useState(false);
+  const [orderDetails, setOrderDetails] = useState<any>({
+    id: "DV-1048",
+    payment: "PIX",
+    delivery: "Entrega",
+    customer: "João Silva",
+    confirmed: false,
+    proof: null,
+    total: 0
+  });
+  const [clientAuth, setClientAuth] = useState(false);
+  const [opScreen, setOpScreen] = useState("home");
+  const [managerTab, setManagerTab] = useState("dashboard");
+  const [toastText, setToastText] = useState("");
+
+  const cartItems = useMemo(() => 
+    Object.entries(cart)
+      .filter(([, q]) => q > 0)
+      .map(([id, q]) => ({p: products.find(p => p[0] === id)!, q})),
+    [cart]
+  );
+
+  const cartTotal = cartItems.reduce((s, {p, q}) => 
+    s + Number(p[3].replace(",", ".")) * q, 0
+  );
+
+  const add = (id: string) => setCart(c => ({...c, [id]: (c[id] || 0) + 1}));
+  const remove = (id: string) => setCart(c => ({...c, [id]: Math.max(0, (c[id] || 0) - 1)}));
+  const clear = (id: string) => setCart(c => {
+    const n = {...c};
+    delete n[id];
+    return n;
+  });
+
+  const notify = (text: string) => {
+    setToastText(text);
+    setTimeout(() => setToastText(""), 2600);
+  };
+
+  const leaveProtectedArea = () => {
+    window.history.pushState({}, "", "/");
+    setAccessGranted(true);
+    setExperience("client");
+  };
+
+  if (experience === "client") {
+    return (
+      <ClientApp 
+        clientScreen={clientScreen}
+        setClientScreen={setClientScreen}
+        selected={selected}
+        setSelected={setSelected}
+        category={category}
+        setCategory={setCategory}
+        query={query}
+        setQuery={setQuery}
+        cart={cart}
+        setCart={setCart}
+        cartItems={cartItems}
+        cartTotal={cartTotal}
+        add={add}
+        remove={remove}
+        clear={clear}
+        checkoutStep={checkoutStep}
+        setCheckoutStep={setCheckoutStep}
+        orderSent={orderSent}
+        setOrderSent={setOrderSent}
+        orderDetails={orderDetails}
+        setOrderDetails={setOrderDetails}
+        clientAuth={clientAuth}
+        setClientAuth={setClientAuth}
+        notify={notify}
+        onExit={leaveProtectedArea}
+      />
+    );
+  }
+
+  if (!accessGranted) {
+    return (
+      <ProtectedEntry 
+        kind={experience} 
+        onUnlock={() => setAccessGranted(true)} 
+        onBack={leaveProtectedArea}
+      />
+    );
+  }
+
+  if (experience === "operator") {
+    return <OperatorApp screen={opScreen} setScreen={setOpScreen} onExit={leaveProtectedArea}/>;
+  }
+
+  return <ManagerApp tab={managerTab} setTab={setManagerTab} onExit={leaveProtectedArea}/>;
 }
 
-function ClientApp(props:any) {
- const {clientScreen,setClientScreen,selected,setSelected,category,setCategory,query,setQuery,cart,cartItems,cartTotal,add,remove,checkoutStep,setCheckoutStep,orderSent,setOrderSent,orderDetails,setOrderDetails,clientAuth,setClientAuth,notify,onExit}=props;
- const cats=["Todos","Doces","Balas","Lanches","Utilidades"];
- const filtered=products.filter((p:Product)=>(category==="Todos"||p[2]===category)&&p[1].toLowerCase().includes(query.toLowerCase()));
- const go=(s:string)=>{setClientScreen(s);window.scrollTo({top:0,behavior:"smooth"})};
- if(clientScreen==="product"&&selected) return <div className="app-shell"><Header back onBack={()=>go("home")} cart={Object.values(cart).reduce<number>((a,b)=>a+Number(b),0)} goCart={()=>go("cart")}/><main className="page"><img className="product-hero" src={selected[4]}/><div className="product-detail"><span className="eyebrow">{selected[2]} · {selected[6]} disponíveis</span><h1>{selected[1]}</h1><p>{selected[5]}</p><strong className="price-lg">{money(Number(selected[3].replace(",",".")))}</strong><div className="qty-line"><span>Quantidade</span><div className="qty"><button onClick={()=>remove(selected[0])}>−</button><b>{cart[selected[0]]||0}</b><button onClick={()=>add(selected[0])}>+</button></div></div><Button onClick={()=>{add(selected[0]);notify("Produto adicionado ao carrinho");}}>Adicionar ao carrinho <ArrowRight size={17}/></Button><Button variant="ghost" onClick={()=>toast.success("WhatsApp simulado",{description:`Olá, Valdir! Tenho uma dúvida sobre ${selected[1]}.`})}><HeartHandshake size={17}/> Tenho uma dúvida sobre este produto</Button></div></main></div>;
- if(clientScreen==="cart") return <div className="app-shell"><Header title="Meu carrinho" back onBack={()=>go("home")}/><main className="page"><div className="stepper"><span className="done">1</span><i/><span className="current">2</span><i/><span>3</span></div><h1>Seu carrinho</h1>{cartItems.length===0?<Empty title="Seu carrinho está vazio" text="Escolha um doce para começar." action={()=>go("home")}/>:<><div className="cart-list">{cartItems.map(({p,q}:any)=><div className="cart-row" key={p[0]}><img src={p[4]}/><div><b>{p[1]}</b><span>{money(Number(p[3].replace(",",".")))} cada</span><div className="qty"><button onClick={()=>remove(p[0])}>−</button><b>{q}</b><button onClick={()=>add(p[0])}>+</button></div></div><strong>{money(Number(p[3].replace(",","."))*q)}</strong></div>)}</div><div className="summary"><span>Subtotal</span><b>{money(cartTotal)}</b><span>Entrega</span><b className="muted">a combinar</b><hr/><strong>Total</strong><strong className="total">{money(cartTotal)}</strong></div><Button onClick={()=>{setCheckoutStep(1);go("checkout")}}>Avançar para o pedido <ArrowRight size={18}/></Button><WhatsApp/></>}<button className="link-btn" onClick={()=>go("home")}><ArrowLeft size={16}/> Continuar comprando</button></main></div>;
- if(clientScreen==="checkout") return <Checkout {...props} go={go}/>;
- if(clientScreen==="order") return <OrderStatus {...props} go={go}/>;
- if(clientScreen==="account"||clientScreen==="history"||clientScreen==="orderDetail") return <Account {...props} go={go}/>;
- return <div className="app-shell"><header className="client-hero"><div className="hero-top"><Logo/><button className="account-btn" onClick={()=>{setClientAuth(true);go("account")}}><UserRound size={19}/></button></div><div className="hero-copy"><span>feito para adoçar seu dia</span><h1>Escolha seus favoritos de hoje.</h1></div><img src={IMG.hero}/></header><main className="page catalog-page"><div className="searchbox"><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar um doce, uma pilha..."/></div><div className="catalog-actions"><WhatsApp/><button className="install" onClick={()=>notify("No celular, use 'Adicionar à tela inicial'")}><Zap size={16}/> instalar loja</button></div><div className="section-head"><div><span className="eyebrow">do balcão para sua casa</span><h2>O que você procura?</h2></div><button className="link-btn" onClick={()=>setCategory("Todos")}>ver tudo <ArrowRight size={15}/></button></div><div className="chips">{cats.map(c=><button key={c} className={category===c?"selected":""} onClick={()=>setCategory(c)}>{c}</button>)}</div><div className="featured" onClick={()=>{setSelected(products[0]);go("product")}}><img src={IMG.hero}/><div><span className="tag">favorito da casa</span><h2>Doce de leite cremoso</h2><p>Uma colherada e você entende.</p><b>{money(12.9)}</b></div><ArrowRight/></div><div className="section-head"><h2>Mais pedidos</h2><span className="muted">{filtered.length} produtos</span></div><div className="product-grid">{filtered.map((p:Product)=><ProductCard key={p[0]} p={p} qty={cart[p[0]]||0} onAdd={()=>{add(p[0]);notify(`${p[1]} foi para o carrinho`)}} onOpen={()=>{setSelected(p);go("product")}}/>)}</div></main><BottomNav items={[{id:"home",label:"Início",icon:<HomeIcon size={19}/>},{id:"cart",label:"Carrinho",icon:<ShoppingCart size={19}/>},{id:"account",label:"Conta",icon:<UserRound size={19}/>}]} active={clientScreen} onSelect={(id)=>go(id)}/></div>;
+function ClientApp(props: any) {
+  const {
+    clientScreen, setClientScreen, selected, setSelected, category, setCategory, 
+    query, setQuery, cart, cartItems, cartTotal, add, remove, clear, checkoutStep, 
+    setCheckoutStep, orderSent, setOrderSent, orderDetails, setOrderDetails, 
+    clientAuth, setClientAuth, notify
+  } = props;
+
+  const cats = ["Todos", "Doces", "Balas", "Lanches", "Utilidades"];
+  const filtered = products.filter((p: Product) => 
+    (category === "Todos" || p[2] === category) && 
+    p[1].toLowerCase().includes(query.toLowerCase())
+  );
+
+  const go = (s: string) => {
+    setClientScreen(s);
+    window.scrollTo({top: 0, behavior: "smooth"});
+  };
+
+  const nav = (
+    <BottomNav 
+      items={[
+        {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
+        {id: "cart", label: "Carrinho", icon: <ShoppingCart size={19}/>},
+        {id: "account", label: "Conta", icon: <UserRound size={19}/>}
+      ]} 
+      active={clientScreen} 
+      onSelect={(id) => go(id)}
+    />
+  );
+
+  if (clientScreen === "product" && selected) {
+    return (
+      <div className="app-shell">
+        <Header 
+          back 
+          onBack={() => go("home")} 
+          cart={Object.values(cart).reduce<number>((a, b) => a + Number(b), 0)} 
+          goCart={() => go("cart")} 
+          onLogo={() => go("home")}
+        />
+        <main className="page">
+          <img className="product-hero" src={selected[4]}/>
+          <div className="product-detail">
+            <span className="eyebrow">{selected[2]} · {selected[6]} disponíveis</span>
+            <h1>{selected[1]}</h1>
+            <p>{selected[5]}</p>
+            <strong className="price-lg">{money(Number(selected[3].replace(",", ".")))}</strong>
+            <div className="qty-line">
+              <span>Quantidade</span>
+              <div className="qty">
+                <button onClick={() => remove(selected[0])}>−</button>
+                <b>{cart[selected[0]] || 0}</b>
+                <button onClick={() => add(selected[0])}>+</button>
+              </div>
+            </div>
+            <Button onClick={() => {add(selected[0]); notify("Produto adicionado ao carrinho");}}>
+              Adicionar ao carrinho <ArrowRight size={17}/>
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => toast.success("WhatsApp simulado", {
+                description: `Olá, Valdir! Tenho uma dúvida sobre ${selected[1]}.`
+              })}
+            >
+              <HeartHandshake size={17}/>
+              Tenho uma dúvida sobre este produto
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (clientScreen === "cart") {
+    return (
+      <div className="app-shell">
+        <Header title="Meu carrinho" back onBack={() => go("home")} onLogo={() => go("home")}/>
+        <main className="page">
+          <Stepper current={1}/>
+          <h1>Seu carrinho</h1>
+          {cartItems.length === 0 ? (
+            <Empty 
+              title="Seu carrinho está vazio" 
+              text="Escolha um doce para começar." 
+              action={() => go("home")}
+            />
+          ) : (
+            <>
+              <div className="cart-list">
+                {cartItems.map(({p, q}: any) => (
+                  <div className="cart-row" key={p[0]}>
+                    <img src={p[4]}/>
+                    <div>
+                      <b>{p[1]}</b>
+                      <span>{money(Number(p[3].replace(",", ".")))} cada</span>
+                      <div className="qty">
+                        <button onClick={() => remove(p[0])}>−</button>
+                        <b>{q}</b>
+                        <button onClick={() => add(p[0])}>+</button>
+                        <button 
+                          className="trash" 
+                          title="Remover" 
+                          onClick={() => clear(p[0])}
+                        >
+                          <Trash2 size={15}/>
+                        </button>
+                      </div>
+                    </div>
+                    <strong>{money(Number(p[3].replace(",", ".")) * q)}</strong>
+                  </div>
+                ))}
+              </div>
+              <div className="summary">
+                <span>Subtotal</span>
+                <b>{money(cartTotal)}</b>
+                <span>Entrega</span>
+                <b className="muted">a combinar</b>
+                <hr/>
+                <strong>Total</strong>
+                <strong className="total">{money(cartTotal)}</strong>
+              </div>
+              <Button onClick={() => {setCheckoutStep(1); go("checkout")}}>
+                Avançar para o pedido <ArrowRight size={18}/>
+              </Button>
+              <WhatsApp/>
+            </>
+          )}
+          <button className="link-btn" onClick={() => go("home")}>
+            <ArrowLeft size={16}/>
+            Continuar comprando
+          </button>
+        </main>
+        {nav}
+      </div>
+    );
+  }
+
+  if (clientScreen === "checkout") {
+    return <Checkout {...props} go={go}/>;
+  }
+
+  if (clientScreen === "order") {
+    return <OrderStatus {...props} go={go}/>;
+  }
+
+  if (clientScreen === "account" || clientScreen === "history" || clientScreen === "orderDetail") {
+    return <Account {...props} go={go}/>;
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="client-hero">
+        <div className="hero-top">
+          <Logo onClick={() => go("home")}/>
+          <button 
+            className="account-btn" 
+            onClick={() => {setClientAuth(true); go("account")}} 
+            aria-label="Minha conta"
+          >
+            <UserRound size={19}/>
+          </button>
+        </div>
+        <div className="hero-copy">
+          <span>feito para adoçar seu dia</span>
+          <h1>Escolha seus favoritos de hoje.</h1>
+        </div>
+        <img src={IMG.hero}/>
+      </header>
+      <main className="page catalog-page">
+        <div className="searchbox">
+          <Search size={18}/>
+          <input 
+            value={query} 
+            onChange={e => setQuery(e.target.value)} 
+            placeholder="Buscar um doce, uma pilha..."
+          />
+        </div>
+        <div className="catalog-actions">
+          <WhatsApp/>
+          <button 
+            className="install" 
+            onClick={() => notify("No celular, use 'Adicionar à tela inicial'")}
+          >
+            <Zap size={16}/>
+            instalar loja
+          </button>
+        </div>
+        <div className="section-head">
+          <div>
+            <span className="eyebrow">do balcão para sua casa</span>
+            <h2>O que você procura?</h2>
+          </div>
+          <button className="link-btn" onClick={() => setCategory("Todos")}>
+            ver tudo <ArrowRight size={15}/>
+          </button>
+        </div>
+        <div className="chips">
+          {cats.map(c => (
+            <button 
+              key={c} 
+              className={category === c ? "selected" : ""} 
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+        <div className="featured" onClick={() => {setSelected(products[0]); go("product")}}>
+          <img src={IMG.hero}/>
+          <div>
+            <span className="tag">favorito da casa</span>
+            <h2>Doce de leite cremoso</h2>
+            <p>Uma colherada e você entende.</p>
+            <b>{money(12.9)}</b>
+          </div>
+          <ArrowRight/>
+        </div>
+        <div className="section-head">
+          <h2>Mais pedidos</h2>
+          <span className="muted">{filtered.length} produtos</span>
+        </div>
+        <div className="product-grid">
+          {filtered.map((p: Product) => (
+            <ProductCard 
+              key={p[0]} 
+              p={p} 
+              qty={cart[p[0]] || 0} 
+              onAdd={() => {add(p[0]); notify(`${p[1]} foi para o carrinho`)}} 
+              onOpen={() => {setSelected(p); go("product")}}
+            />
+          ))}
+        </div>
+      </main>
+      {nav}
+    </div>
+  );
 }
-function Checkout({cartItems,cartTotal,checkoutStep,setCheckoutStep,setOrderSent,setOrderDetails,go,notify}:any) { const [city,setCity]=useState("Ribeirão Preto"); const [delivery,setDelivery]=useState("Entrega"); const [urgent,setUrgent]=useState(false); const [payment,setPayment]=useState("PIX"); const [pixCopied,setPixCopied]=useState(false); const entry=cartTotal/2; return <div className="app-shell"><Header title="Fechar pedido" back onBack={()=>go("cart")}/><main className="page"><div className="stepper"><span className={checkoutStep>=1?"current":""}>1</span><i/><span className={checkoutStep>=2?"current":""}>2</span><i/><span className={checkoutStep>=3?"current":""}>3</span></div>{checkoutStep===1&&<><span className="eyebrow">etapa 1 de 3</span><h1>Como podemos te chamar?</h1><p className="muted">Você pode comprar sem cadastro ou entrar para guardar seus pedidos.</p><label>Nome<input placeholder="Ex.: Maria de Souza"/></label><label>Telefone<input placeholder="(16) 99999-9999"/></label><Button variant="google" onClick={()=>notify("Login Google simulado: Maria de Souza")}>G <span>Entrar com Google</span></Button><Button onClick={()=>setCheckoutStep(2)}>Continuar como visitante <ArrowRight size={17}/></Button></>}{checkoutStep===2&&<><span className="eyebrow">etapa 2 de 3</span><h1>Como você recebe?</h1><label>Localização<select value={city} onChange={e=>setCity(e.target.value)}><option>Ribeirão Preto</option><option>Araraquara</option></select></label>{city==="Ribeirão Preto"?<div className="choice-row"><button className={delivery==="Entrega"?"chosen":""} onClick={()=>setDelivery("Entrega")}><Truck/><b>Entrega</b><span>Organizamos por região</span></button><button className={delivery==="Retirada"?"chosen":""} onClick={()=>setDelivery("Retirada")}><Store/><b>Retirada</b><span>opção habilitada</span></button></div>:<div className="notice"><MapPin/><b>Encomenda para Araraquara</b><span>Próxima encomenda: <strong>15/08/2026</strong></span></div>}{delivery==="Entrega"&&city==="Ribeirão Preto"&&<><label>Nome do local<input placeholder="Casa da Maria"/></label><label>Endereço<input placeholder="Rua, avenida..."/></label><div className="two-cols"><label>Número<input placeholder="123"/></label><label>Bairro<input placeholder="Centro"/></label></div><label>Região<select><option>Zona Norte</option><option>Centro</option><option>Zona Sul</option><option>Zona Leste</option></select></label></>}<div className="urgency"><div><Zap/><b>Quando você precisa receber?</b></div><button className={!urgent?"chosen":""} onClick={()=>setUrgent(false)}>Posso aguardar a rota normal</button><button className={urgent?"urgent chosen":""} onClick={()=>setUrgent(true)}>🚨 URGENTE — preciso o quanto antes</button><small>Urgente sinaliza prioridade ao vendedor, não promete entrega imediata.</small></div><Button onClick={()=>setCheckoutStep(3)}>Ir para pagamento <ArrowRight size={17}/></Button></>}{checkoutStep===3&&<><span className="eyebrow">etapa 3 de 3</span><h1>Como você paga?</h1><div className="pay-options">{["PIX","Cartão","Dinheiro"].map(p=><button className={payment===p?"chosen":""} onClick={()=>setPayment(p)} key={p}>{p==="PIX"?<WalletCards/>:p==="Cartão"?<CreditCard/>:<DollarSign/>}<b>{p}</b><span>{p==="Dinheiro"?"a combinar":"entrada de 50%"}</span></button>)}</div><div className="summary"><span>Total do pedido</span><b>{money(cartTotal)}</b><span>Entrada (50%)</span><b>{money(entry)}</b><span>Saldo restante</span><b>{money(entry)}</b></div>{payment==="PIX"&&<div className="pix-box"><span>chave PIX mock</span><b>doces.valdir@demo.com</b><button className={pixCopied?"copied":""} onClick={()=>{navigator.clipboard?.writeText("doces.valdir@demo.com");setPixCopied(true);notify("Chave PIX copiada com sucesso")}}>{pixCopied?<><Check size={15}/> chave copiada</>:<><Copy size={15}/> copiar chave PIX</>}</button>{pixCopied&&<strong className="copy-success"><Check size={14}/> Pronto. A chave foi copiada para você colar no app do banco.</strong>}<small>Após pagar, volte ao status do pedido para enviar o comprovante.</small></div>}<Button onClick={()=>{setOrderDetails({payment,delivery,customer:"João Silva",confirmed:false,proof:null,total:cartTotal});setOrderSent(true);go("order")}}>Revisar e enviar pedido <ArrowRight size={17}/></Button></>}</main></div> }
-function OrderStatus({go,orderDetails,setOrderDetails,clientAuth}:any){ const [proofPreview,setProofPreview]=useState<string|null>(orderDetails.proof); const [sent,setSent]=useState(Boolean(orderDetails.proof)); const total=orderDetails.total||80; const entry=total/2; const proofNeeded=orderDetails.payment!=="Dinheiro"&&!orderDetails.confirmed; const handleFile=(file?:File)=>{if(!file)return; const reader=new FileReader(); reader.onload=()=>setProofPreview(String(reader.result)); reader.readAsDataURL(file)}; const sendProof=()=>{if(!proofPreview)return; setOrderDetails((current:any)=>({...current,proof:proofPreview})); setSent(true); toast.success("Comprovante enviado pelo WhatsApp",{description:`📎 Comprovante de pagamento — Pedido #1048 · Cliente: ${orderDetails.customer} · Entrada: ${money(entry)} · Forma: ${orderDetails.payment} · imagem anexada`})}; return <div className="app-shell"><Header title="Status do pedido"/><main className="page success-page"><div className="success-icon"><Check size={32}/></div><span className="eyebrow">Pedido #1048</span><h1>{sent?"Comprovante enviado.":"Pedido recebido com carinho."}</h1><p>{sent?"Valdir receberá a imagem com os dados desta entrada para conferir o pagamento.":"Acompanhe aqui a confirmação do seu pedido, sem precisar voltar ao catálogo."}</p><div className="order-status"><b>{orderDetails.confirmed?"PAGAMENTO CONFIRMADO":"AGUARDANDO CONFIRMAÇÃO DO PAGAMENTO"}</b><span>Cliente: {orderDetails.customer}</span><div className="status-summary"><span>Total</span><strong>{money(total)}</strong><span>Entrada</span><strong>{orderDetails.payment==="Dinheiro"?"—":money(entry)}</strong><span>Saldo</span><strong>{orderDetails.payment==="Dinheiro"?"Pagamento na entrega/retirada":money(entry)}</strong></div><div className="status-line"><i className="on"/><i/><i/><i/><i/></div><small>{orderDetails.confirmed?"Valdir já confirmou a entrada. O pedido pode seguir para separação.":orderDetails.payment==="Dinheiro"?`Pagamento: dinheiro na ${orderDetails.delivery.toLowerCase()==="retirada"?"retirada":"entrega"}.`:"A entrada de 50% ainda aguarda confirmação."}</small></div>{proofNeeded&&!sent&&<div className="proof-card"><div><span className="eyebrow">entrada de 50% · {orderDetails.payment}</span><h2>Envie o comprovante</h2><p>Escolha uma foto da câmera ou da galeria. Você verá a imagem antes de enviar para Valdir.</p></div><div className="proof-pickers"><label htmlFor="proof-camera"><Camera size={18}/> Tirar foto<input id="proof-camera" type="file" accept="image/*" capture="environment" onChange={e=>handleFile(e.target.files?.[0])}/></label><label htmlFor="proof-gallery"><ImageIcon size={18}/> Escolher da galeria<input id="proof-gallery" type="file" accept="image/*" onChange={e=>handleFile(e.target.files?.[0])}/></label></div>{proofPreview&&<div className="proof-preview"><img src={proofPreview}/><span>Pré-visualização do comprovante</span><Button variant="whatsapp" onClick={sendProof}><HeartHandshake size={17}/> Enviar comprovante pelo WhatsApp</Button></div>}</div>}{!proofNeeded&&orderDetails.payment==="Dinheiro"&&<div className="cash-note"><DollarSign size={20}/><b>Pagamento: dinheiro na {orderDetails.delivery.toLowerCase()==="retirada"?"retirada":"entrega"}</b><span>Não é necessário enviar comprovante.</span></div>}<Button variant="whatsapp" onClick={()=>toast.success("WhatsApp simulado aberto",{description:`Pedido #1048 · ${orderDetails.customer}`})}><HeartHandshake size={17}/> Falar com Valdir</Button><Button onClick={()=>go("home")}>Voltar ao catálogo</Button>{clientAuth&&<Button variant="ghost" onClick={()=>go("account")}>Ver minha conta</Button>}</main></div> }
-function Account({go,clientAuth}:any){return <div className="app-shell"><Header title="Minha conta" back onBack={()=>go("home")}/><main className="page"><div className="account-card"><div className="avatar">M</div><div><b>Maria de Souza</b><span>Cliente autenticada · Google simulado</span></div><Check/></div><div className="section-head"><h2>Seus pedidos</h2><button className="link-btn" onClick={()=>go("history")}>ver histórico <ArrowRight size={15}/></button></div><div className="order-card"><div><span className="eyebrow">08 ago 2026 · DV-1038</span><b>R$ 74,80</b><span>Doce de leite, paçoca e bala sortida</span></div><span className="status-pill green">CONCLUÍDO</span><Button variant="soft" onClick={()=>go("orderDetail")}>Repetir pedido <ArrowRight size={15}/></Button></div><div className="order-card"><div><span className="eyebrow">22 jul 2026 · DV-0982</span><b>R$ 46,50</b><span>Chocolate e biscoito caseiro</span></div><span className="status-pill">CONCLUÍDO</span><Button variant="soft" onClick={()=>go("orderDetail")}>Ver pedido <ArrowRight size={15}/></Button></div></main><BottomNav items={[{id:"home",label:"Início",icon:<HomeIcon size={19}/>},{id:"cart",label:"Carrinho",icon:<ShoppingCart size={19}/>},{id:"account",label:"Conta",icon:<UserRound size={19}/>}]} active="account" onSelect={id=>go(id)}/></div>}
-function Empty({title,text,action}:{title:string,text:string,action:()=>void}){return <div className="empty"><ShoppingBag size={32}/><h2>{title}</h2><p>{text}</p><Button onClick={action}>Ver catálogo</Button></div>}
-function ProtectedEntry({kind,onUnlock,onBack}:{kind:"operator"|"manager",onUnlock:()=>void,onBack:()=>void}){const manager=kind==="manager";return <div className={`app-shell protected-entry ${manager?"manager-entry":"operator-entry"}`}><div className="protected-mark"><img src={IMG.logo}/><span>{manager?"central do gestor":"operação da loja"}</span></div><main className="page"><span className="eyebrow">acesso protegido</span><h1>{manager?"Olá, gestor.":"Olá, Valdir e família."}</h1><p>{manager?"Entre para acompanhar o movimento completo do Doces do Valdir.":"Este espaço reúne os pedidos, produtos e entregas do dia."}</p><label>Usuário<input defaultValue={manager?"gestor@docesdovaldir.demo":"valdir@docesdovaldir.demo"}/></label><label>Senha<input type="password" defaultValue="demo123"/></label><Button onClick={onUnlock}>Entrar no painel <ArrowRight size={17}/></Button><button className="link-btn protected-back" onClick={onBack}><ArrowLeft size={16}/> voltar ao catálogo</button><small className="demo-note">Autenticação simulada nesta etapa do protótipo.</small></main></div>}
 
-function OperatorApp({screen,setScreen,onExit}:{screen:string,setScreen:(s:string)=>void,onExit:()=>void}) { const [selectedOrder,setSelectedOrder]=useState<any>(null); const [routeDone,setRouteDone]=useState(false); const opNav=[{id:"home",label:"Início",icon:<HomeIcon size={19}/>},{id:"orders",label:"Pedidos",icon:<ClipboardList size={19}/>},{id:"routes",label:"Entregas",icon:<Truck size={19}/>}]; if(screen==="product")return <div className="app-shell operator"><Header title="Novo produto" back onBack={()=>setScreen("home")}/><main className="page"><span className="eyebrow">cadastro rápido</span><h1>Vamos colocar um produto na loja?</h1><div className="photo-capture"><Plus size={30}/><b>Tirar foto</b><span>ou escolher da galeria</span></div><div className="crop-preview"><img src={IMG.hero}/><span>enquadramento simulado</span></div><label>Nome do produto<input placeholder="Ex.: Doce de leite"/></label><div className="two-cols"><label>Preço de venda<input placeholder="R$ 0,00"/></label><label>Valor de custo<input placeholder="R$ 0,00"/></label></div><label>Quantidade disponível<input placeholder="0"/></label><Button onClick={()=>{toast.success("Produto salvo no mock");setScreen("home")}}>Salvar produto <Check size={17}/></Button></main></div>; if(screen==="orders")return <div className="app-shell operator"><Header title="Pedidos do dia" subtitle="Tudo em um só lugar" back onBack={()=>setScreen("home")}/><main className="page"><div className="urgent-banner"><Zap/><div><b>2 pedidos urgentes</b><span>Olhe primeiro para eles</span></div></div><div className="status-tabs"><b>NOVOS <i>2</i></b><span>EM ANDAMENTO 3</span><span>PRONTOS 1</span></div>{mockOrders.slice(0,5).map(o=><div key={o.id} className={`op-order ${o.urgent?"urgent-order":""}`} onClick={()=>{setSelectedOrder(o);setScreen("order")}}>{o.urgent&&<span className="urgent-label">🚨 URGENTE</span>}<div><b>{o.name}</b><span>{o.id} · {o.region}</span><small>{o.items}</small></div><div><strong>{money(o.total)}</strong><span className="status-pill">{o.status}</span></div></div>)}</main><BottomNav items={opNav} active="orders" onSelect={setScreen}/></div>; if(screen==="order"&&selectedOrder)return <div className="app-shell operator"><Header title={selectedOrder.id} back onBack={()=>setScreen("orders")}/><main className="page"><div className="op-detail-head">{selectedOrder.urgent&&<span className="urgent-label">🚨 PEDIDO URGENTE</span>}<h1>{selectedOrder.name}</h1><span>{selectedOrder.city} · {selectedOrder.region}</span></div><div className="summary"><span>Total</span><b>{money(selectedOrder.total)}</b><span>Entrada 50%</span><b>{money(selectedOrder.total/2)}</b><span>Saldo</span><b>{money(selectedOrder.total/2)}</b><span>Pagamento</span><b>{selectedOrder.pay}</b></div><div className="timeline"><b>Fluxo do pedido</b>{["NOVO","CONFIRMADO","AGUARDANDO PAGAMENTO","SEPARANDO","PRONTO PARA ROTA","CONCLUÍDO"].map((s,i)=><div className={i<3?"done":i===3?"current":""} key={s}><i>{i<3?<Check size={13}/>:i+1}</i><span>{s}</span></div>)}</div><Button onClick={()=>toast.success("Entrada de 50% confirmada",{description:"Pedido avançou para SEPARANDO"})}>Confirmar entrada 50%</Button><Button variant="soft" onClick={()=>toast.success("Pagamento total confirmado")}>Confirmar pagamento total</Button></main></div>; if(screen==="routes")return <div className="app-shell operator"><Header title="Entregas" subtitle="Quarta-feira, 12 de agosto" back onBack={()=>setScreen("home")}/><main className="page"><div className="route-card"><div className="route-title"><Truck/><div><b>Rota Zona Norte</b><span>8 pedidos · 2 urgentes</span></div><span className="status-pill green">pronta</span></div><div className="route-progress"><div style={{width:routeDone?"100%":"0%"}}/></div><p>{routeDone?"Rota finalizada. 1 pedido ficou pendente.":"Valdir não precisa marcar pedido por pedido na rua."}</p><Button onClick={()=>{setRouteDone(true);toast.success("Rota finalizada em lote")}}>{routeDone?"Rota finalizada":"Finalizar rota"} <Check size={17}/></Button></div>{routeDone&&<div className="pending-card"><span className="urgent-label">PENDENTE DE ENTREGA</span><b>Rafael Souza · DV-1043</b><span>Não estava em casa</span><div><Button variant="soft" onClick={()=>toast.success("Pendência reagendada")}>Reagendar</Button><Button variant="ghost" onClick={()=>toast.success("Contato simulado")}>Falar com cliente</Button></div></div>}</main><BottomNav items={opNav} active="routes" onSelect={setScreen}/></div>; return <div className="app-shell operator"><Header/><main className="page operator-home"><div className="hello"><span>painel do dia</span><h1>Olá, Valdir!</h1><p>Vamos deixar tudo pronto com calma.</p></div><div className="op-grid"><button onClick={()=>setScreen("product")}><Plus/><b>Novo produto</b><span>tirar foto e cadastrar</span></button><button onClick={()=>toast.success("Meus produtos: 16 no catálogo")}><Package/><b>Meus produtos</b><span>16 disponíveis</span></button><button onClick={()=>setScreen("orders")}><ClipboardList/><b>Pedidos</b><span>2 precisam de atenção</span></button><button onClick={()=>setScreen("routes")}><Truck/><b>Entregas</b><span>rota Zona Norte</span></button></div><div className="simple-banner"><HeartHandshake/><div><b>Ficou com dúvida?</b><span>Chame o gestor para ajudar.</span></div></div><button className="exit-role" onClick={onExit}>Trocar experiência</button></main><BottomNav items={opNav} active="home" onSelect={setScreen}/></div> }
+function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrderSent, setOrderDetails, go, notify}: any) {
+  const [city, setCity] = useState("Ribeirão Preto");
+  const [delivery, setDelivery] = useState("Entrega");
+  const [urgent, setUrgent] = useState(false);
+  const [payment, setPayment] = useState("PIX");
+  const [pixCopied, setPixCopied] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [localName, setLocalName] = useState("");
+  const [addr, setAddr] = useState("");
+  const [num, setNum] = useState("");
+  const [district, setDistrict] = useState("");
+  const [region, setRegion] = useState("Zona Norte");
 
-function ManagerApp({tab,setTab,onExit}:{tab:string,setTab:(s:string)=>void,onExit:()=>void}) { const items=[{id:"dashboard",label:"Visão geral",icon:<LayoutDashboard/>},{id:"products",label:"Produtos",icon:<Package/>},{id:"stock",label:"Estoque",icon:<ClipboardList/>},{id:"orders",label:"Pedidos",icon:<ShoppingCart/>},{id:"clients",label:"Clientes",icon:<Users/>},{id:"reports",label:"Relatórios",icon:<BarChart3/>},{id:"routes",label:"Rotas",icon:<Truck/>},{id:"araraquara",label:"Araraquara",icon:<MapPin/>},{id:"settings",label:"Configurações",icon:<Settings/>}]; const title=items.find(i=>i.id===tab)?.label||"Dashboard"; return <div className="app-shell manager"><Header title={title} subtitle="Painel gestor"/><main className="page manager-page">{tab==="dashboard"&&<><div className="manager-welcome"><div><span>terça-feira, 12 de agosto</span><h1>Bom dia, gestor.</h1></div><div className="avatar orange">V</div></div><div className="metric-grid"><Metric label="Vendas do mês" value="R$ 8.420" trend="+12%"/><Metric label="Pedidos" value="48" trend="+8 novos"/><Metric label="Lucro bruto" value="R$ 3.186" trend="37,8% margem"/><Metric label="Estoque baixo" value="3" trend="ver produtos" alert/></div><div className="dashboard-card"><div className="section-head"><h2>Vendas por semana</h2><span className="muted">agosto 2026</span></div><div className="bars"><i style={{height:"42%"}}/><i style={{height:"64%"}}/><i style={{height:"50%"}}/><i style={{height:"78%"}}/><i style={{height:"58%"}}/><i style={{height:"88%"}}/><i style={{height:"70%"}}/></div><div className="days"><span>seg</span><span>ter</span><span>qua</span><span>qui</span><span>sex</span><span>sáb</span><span>dom</span></div></div><div className="split-cards"><div><Zap/><b>2 urgentes</b><span>pedidos para olhar</span></div><div><Truck/><b>1 pendência</b><span>de entrega</span></div></div></>}{tab==="products"&&<ManagerList title="Produtos" subtitle="16 itens no catálogo" rows={products.slice(0,7).map(p=>({name:p[1],meta:`${p[6]} em estoque · ${p[2]}`,value:money(Number(p[3].replace(",",".")))}))} action="Novo produto"/>}{tab==="stock"&&<ManagerList title="Estoque" subtitle="Acompanhe o que precisa de atenção" rows={products.slice(0,6).map(p=>({name:p[1],meta:`mínimo 10 unidades`,value:`${p[6]} un.`,alert:p[6]<10}))} action="Ajustar estoque"/>}{tab==="orders"&&<ManagerList title="Pedidos" subtitle="8 pedidos recentes" rows={mockOrders.map(o=>({name:`${o.id} · ${o.name}`,meta:`${o.city} · ${o.pay}`,value:money(o.total),alert:o.urgent}))} action="Filtrar status"/>}{tab==="clients"&&<ManagerList title="Clientes" subtitle="Base de clientes fictícia" rows={["Maria de Souza","Dona Célia","Marcos Lima","Ana Paula","João Ferreira"].map((n,i)=>({name:n,meta:`${i+2} pedidos · último em agosto`,value:i%2===0?"ativo":"cadastrado"}))} action="Exportar lista"/>}{tab==="reports"&&<Reports/>}{tab==="routes"&&<ManagerList title="Rotas" subtitle="Regiões e pendências" rows={["Zona Norte","Centro","Zona Sul","Zona Leste"].map((n,i)=>({name:n,meta:`quarta-feira · ${i+2} pedidos`,value:i===0?"2 urgentes":"organizada"}))} action="Organizar rota"/>}{tab==="araraquara"&&<div className="settings-card"><span className="eyebrow">encomendas</span><h1>Araraquara</h1><p>Próxima data definida para reunir os pedidos dessa cidade.</p><div className="date-box"><MapPin/><b>15/08/2026</b><span>próxima encomenda</span></div><Button onClick={()=>toast.success("Data de encomenda editada no mock")}>Alterar data <Pencil size={16}/></Button></div>}{tab==="settings"&&<SettingsPanel/>}</main><nav className="manager-nav">{items.map(i=><button key={i.id} className={tab===i.id?"active":""} onClick={()=>setTab(i.id)}>{i.icon}<span>{i.label}</span></button>)}<button onClick={onExit}><X/><span>Sair</span></button></nav></div> }
-function Metric({label,value,trend,alert}:{label:string,value:string,trend:string,alert?:boolean}){return <div className={`metric ${alert?"alert":""}`}><span>{label}</span><b>{value}</b><small>{trend}</small></div>}
-function ManagerList({title,subtitle,rows,action}:{title:string,subtitle:string,rows:any[],action:string}){return <><div className="list-head"><div><span className="eyebrow">gestão</span><h1>{title}</h1><p>{subtitle}</p></div><Button onClick={()=>toast.success(`${action} simulado`)}><Plus size={16}/>{action}</Button></div><div className="manager-list">{rows.map((r,i)=><div className="manager-row" key={i}><div className="mini-avatar">{r.name[0]}</div><div><b>{r.name}</b><span>{r.meta}</span></div><strong className={r.alert?"red":""}>{r.value}</strong><ChevronRight size={17}/></div>)}</div></>}
-function Reports(){return <div><span className="eyebrow">inteligência da loja</span><h1>Relatórios</h1><div className="report-tabs"><button className="active">Vendas</button><button>Custos</button><button>Lucro</button><button>Margem</button></div><div className="report-big"><span>Vendas no período</span><b>R$ 8.420,00</b><small>01–12 agosto 2026 · +12% vs. anterior</small><div className="line-chart"><i/><i/><i/><i/><i/><i/><i/></div></div><div className="report-card"><b>Produtos mais lucrativos</b><span>1. Doce de leite <strong>R$ 486</strong></span><span>2. Paçoca rolha <strong>R$ 320</strong></span><span>3. Chocolate <strong>R$ 218</strong></span></div></div>}
-function SettingsPanel(){return <div><span className="eyebrow">administração</span><h1>Configurações</h1><div className="settings-list"><div><WalletCards/><span><b>Chave PIX</b><small>doces.valdir@demo.com</small></span><ChevronRight/></div><div><UserRound/><span><b>Nome do titular</b><small>Valdir de Souza</small></span><ChevronRight/></div><div><HeartHandshake/><span><b>WhatsApp de Valdir</b><small>configurado no mock</small></span><ChevronRight/></div><div><Store/><span><b>Retirada</b><small>ativa</small></span><ChevronRight/></div><div><Users/><span><b>Usuários e permissões</b><small>1 gestor · 2 operadores</small></span><ChevronRight/></div></div></div>}
+  const entry = cartTotal / 2;
+  const needsEntry = payment !== "Dinheiro";
+  const orderNumber = "DV-1049";
+  
+  const addressLine = city === "Araraquara" 
+    ? "Encomenda — combinação de retirada/envio" 
+    : delivery === "Retirada" 
+    ? "Retirada no balcão do Valdir" 
+    : `${addr || "Rua..."}, ${num || "s/n"} – ${district || "Centro"}`;
+
+  const whatsMsg = `🧾 Pedido ${orderNumber} · Doces do Valdir
+Cliente: ${name || "Visitante"}
+Telefone: ${phone || "não informado"}
+Cidade: ${city}
+Modalidade: ${city === "Araraquara" ? "Encomenda" : delivery}
+Local: ${localName || "—"}
+Endereço: ${addressLine}
+Região: ${city === "Araraquara" ? "Encomenda" : region}
+Itens:
+${cartItems.map(({p, q}: any) => `• ${q}x ${p[1]} — ${money(Number(p[3].replace(",", ".")) * q)}`).join("\n")}
+Total: ${money(cartTotal)}
+Pagamento: ${payment}
+Entrada: ${needsEntry ? money(entry) : "— (pagamento total na entrega/retirada)"}
+Saldo: ${needsEntry ? money(entry) : "—"}
+Urgente: ${urgent ? "🚨 SIM — o quanto antes" : "não"}
+Obs: —`;
+
+  return (
+    <div className="app-shell">
+      <Header 
+        title="Fechar pedido" 
+        back 
+        onBack={() => checkoutStep === 1 ? go("cart") : setCheckoutStep(checkoutStep - 1)}
+      />
+      <main className="page">
+        <Stepper current={checkoutStep === 1 ? 2 : 3}/>
+        
+        {checkoutStep === 1 && (
+          <>
+            <span className="eyebrow">etapa 2 de 3 · entrega</span>
+            <h1>Como você recebe?</h1>
+            <label>
+              Nome
+              <input 
+                value={name} 
+                onChange={e => setName(e.target.value)} 
+                placeholder="Ex.: Maria de Souza"
+              />
+            </label>
+            <label>
+              Telefone
+              <input 
+                value={phone} 
+                onChange={e => setPhone(e.target.value)} 
+                placeholder="(16) 99999-9999"
+              />
+            </label>
+            <Button 
+              variant="google" 
+              onClick={() => {setName("Maria de Souza"); notify("Login Google simulado: Maria de Souza")}}
+            >
+              G <span>Entrar com Google</span>
+            </Button>
+            <p className="muted">Você pode comprar sem cadastro.</p>
+            <label>
+              Localização
+              <select value={city} onChange={e => setCity(e.target.value)}>
+                <option>Ribeirão Preto</option>
+                <option>Araraquara</option>
+              </select>
+            </label>
+            
+            {city === "Ribeirão Preto" ? (
+              <div className="choice-row">
+                <button 
+                  className={delivery === "Entrega" ? "chosen" : ""} 
+                  onClick={() => setDelivery("Entrega")}
+                >
+                  <Truck/>
+                  <b>Entrega</b>
+                  <span>Organizamos por região</span>
+                </button>
+                <button 
+                  className={delivery === "Retirada" ? "chosen" : ""} 
+                  onClick={() => setDelivery("Retirada")}
+                >
+                  <Store/>
+                  <b>Retirada</b>
+                  <span>opção habilitada</span>
+                </button>
+              </div>
+            ) : (
+              <div className="notice">
+                <MapPin/>
+                <b>Encomenda para Araraquara</b>
+                <span>Próxima encomenda: <strong>15/08/2026</strong></span>
+              </div>
+            )}
+            
+            {delivery === "Entrega" && city === "Ribeirão Preto" && (
+              <>
+                <label>
+                  Nome do local
+                  <input 
+                    value={localName} 
+                    onChange={e => setLocalName(e.target.value)} 
+                    placeholder="Casa da Maria"
+                  />
+                </label>
+                <label>
+                  Endereço
+                  <input 
+                    value={addr} 
+                    onChange={e => setAddr(e.target.value)} 
+                    placeholder="Rua, avenida..."
+                  />
+                </label>
+                <div className="two-cols">
+                  <label>
+                    Número
+                    <input 
+                      value={num} 
+                      onChange={e => setNum(e.target.value)} 
+                      placeholder="123"
+                    />
+                  </label>
+                  <label>
+                    Bairro
+                    <input 
+                      value={district} 
+                      onChange={e => setDistrict(e.target.value)} 
+                      placeholder="Centro"
+                    />
+                  </label>
+                </div>
+                <label>
+                  Região
+                  <select value={region} onChange={e => setRegion(e.target.value)}>
+                    <option>Zona Norte</option>
+                    <option>Centro</option>
+                    <option>Zona Sul</option>
+                    <option>Zona Leste</option>
+                  </select>
+                </label>
+              </>
+            )}
+            
+            {delivery === "Retirada" && city === "Ribeirão Preto" && (
+              <div className="notice">
+                <Store/>
+                <b>Retirada no balcão</b>
+                <span>Endereço de retirada: Rua dos Doces, 123 — referência: praça central (configurável no painel).</span>
+              </div>
+            )}
+            
+            <div className="urgency">
+              <div>
+                <Zap/>
+                <b>Quando você precisa receber?</b>
+              </div>
+              <button 
+                className={!urgent ? "chosen" : ""} 
+                onClick={() => setUrgent(false)}
+              >
+                Posso aguardar a rota normal
+              </button>
+              <button 
+                className={urgent ? "urgent chosen" : ""} 
+                onClick={() => setUrgent(true)}
+              >
+                🚨 URGENTE — preciso o quanto antes
+              </button>
+              <small>Urgente sinaliza prioridade ao vendedor, não promete entrega imediata.</small>
+            </div>
+            
+            <Button onClick={() => setCheckoutStep(2)}>
+              Ir para pagamento <ArrowRight size={17}/>
+            </Button>
+          </>
+        )}
+        
+        {checkoutStep === 2 && (
+          <>
+            <span className="eyebrow">etapa 3 de 3 · pagamento</span>
+            <h1>Como você paga?</h1>
+            <div className="pay-options">
+              {["PIX", "Cartão", "Dinheiro"].map(p => (
+                <button 
+                  className={payment === p ? "chosen" : ""} 
+                  onClick={() => setPayment(p)} 
+                  key={p}
+                >
+                  {p === "PIX" ? <WalletCards/> : p === "Cartão" ? <CreditCard/> : <DollarSign/>}
+                  <b>{p}</b>
+                  <span>{p === "Dinheiro" ? "a combinar" : "entrada de 50%"}</span>
+                </button>
+              ))}
+            </div>
+            <div className="summary">
+              <span>Total do pedido</span>
+              <b>{money(cartTotal)}</b>
+              <span>Entrada</span>
+              <b>{needsEntry ? money(entry) : "—"}</b>
+              <span>Saldo restante</span>
+              <b>{needsEntry ? money(entry) : "Pagamento na entrega/retirada"}</b>
+            </div>
+            
+            {payment === "PIX" && (
+              <div className="pix-box">
+                <span>chave PIX mock</span>
+                <b>doces.valdir@demo.com</b>
+                <small>Titular: Valdir</small>
+                <button 
+                  className={pixCopied ? "copied" : ""} 
+                  onClick={() => {
+                    navigator.clipboard?.writeText("doces.valdir@demo.com");
+                    setPixCopied(true);
+                    notify("Chave PIX copiada com sucesso");
+                  }}
+                >
+                  {pixCopied ? (
+                    <>
+                      <Check size={15}/>
+                      chave copiada
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={15}/>
+                      copiar chave PIX
+                    </>
+                  )}
+                </button>
+                {pixCopied && (
+                  <strong className="copy-success">
+                    <Check size={14}/>
+                    Pronto. A chave foi copiada para você colar no app do banco.
+                  </strong>
+                )}
+                <small>Após pagar, volte ao status do pedido para enviar o comprovante.</small>
+              </div>
+            )}
+            
+            {payment === "Cartão" && (
+              <div className="pix-box">
+                <span>cartão · entrada de 50%</span>
+                <small>Os dados do cartão serão combinados com Valdir após a confirmação do pedido.</small>
+              </div>
+            )}
+            
+            <Button onClick={() => setCheckoutStep(3)}>
+              Revisar pedido <ArrowRight size={17}/>
+            </Button>
+          </>
+        )}
+        
+        {checkoutStep === 3 && (
+          <>
+            <span className="eyebrow">revisão final</span>
+            <h1>Revise e envie</h1>
+            <div className="summary">
+              <span>Cliente</span>
+              <b>{name || "Visitante"}</b>
+              <span>Recebe</span>
+              <b>{city === "Araraquara" ? "Encomenda Araraquara" : `${delivery} · ${region}`}</b>
+              <span>Endereço</span>
+              <b>{addressLine}</b>
+              <span>Pagamento</span>
+              <b>{payment}{needsEntry ? " · entrada 50%" : " · total na entrega/retirada"}</b>
+              {urgent && (
+                <>
+                  <span>Prioridade</span>
+                  <b>🚨 URGENTE</b>
+                </>
+              )}
+            </div>
+            <div className="summary">
+              {cartItems.map(({p, q}: any) => (
+                <span key={p[0]}>
+                  {q}x {p[1]} — {money(Number(p[3].replace(",", ".")) * q)}
+                </span>
+              ))}
+              <hr/>
+              <strong>Total</strong>
+              <strong className="total">{money(cartTotal)}</strong>
+              {needsEntry && (
+                <>
+                  <strong>Entrada</strong>
+                  <strong className="total">{money(entry)}</strong>
+                </>
+              )}
+            </div>
+            <div className="pix-box">
+              <span>mensagem que será enviada no WhatsApp</span>
+              <pre style={{whiteSpace: "pre-wrap", margin: 0, fontSize: 12}}>
+                {whatsMsg}
+              </pre>
+            </div>
+            <Button onClick={() => {
+              setOrderDetails({
+                id: orderNumber,
+                payment,
+                delivery,
+                city,
+                region,
+                urgent,
+                customer: name || "Visitante",
+                phone,
+                confirmed: false,
+                proof: null,
+                total: cartTotal
+              });
+              setOrderSent(true);
+              toast.success("Pedido enviado no WhatsApp (simulado)", {description: whatsMsg});
+              go("order");
+            }}>
+              Enviar pedido no WhatsApp <ArrowRight size={17}/>
+            </Button>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
+  const [proofPreview, setProofPreview] = useState<string | null>(orderDetails.proof);
+  const [sent, setSent] = useState(Boolean(orderDetails.proof));
+  const total = orderDetails.total || 80;
+  const entry = total / 2;
+  const proofNeeded = orderDetails.payment !== "Dinheiro" && !orderDetails.confirmed;
+  const idx = orderDetails.confirmed ? 3 : orderDetails.payment === "Dinheiro" ? 1 : 2;
+
+  const handleFile = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setProofPreview(String(reader.result));
+    reader.readAsDataURL(file);
+  };
+
+  const sendProof = () => {
+    if (!proofPreview) return;
+    setOrderDetails((current: any) => ({...current, proof: proofPreview}));
+    setSent(true);
+    toast.success("Comprovante enviado pelo WhatsApp", {
+      description: `📎 Comprovante de pagamento — Pedido ${orderDetails.id} · Cliente: ${orderDetails.customer} · Entrada: ${money(entry)} · Forma: ${orderDetails.payment} · imagem anexada`
+    });
+  };
+
+  return (
+    <div className="app-shell">
+      <Header title="Status do pedido" onLogo={() => go("home")}/>
+      <main className="page success-page">
+        <div className="success-icon">
+          <Check size={32}/>
+        </div>
+        <span className="eyebrow">Pedido {orderDetails.id}</span>
+        <h1>{sent ? "Comprovante enviado." : "Pedido recebido com carinho."}</h1>
+        <p>
+          {sent 
+            ? "Valdir receberá a imagem com os dados desta entrada para conferir o pagamento."
+            : "Acompanhe aqui a confirmação do seu pedido, sem precisar voltar ao catálogo."
+          }
+        </p>
+        <div className="order-status">
+          <b>
+            {orderDetails.confirmed 
+              ? "PAGAMENTO CONFIRMADO" 
+              : orderDetails.payment === "Dinheiro" 
+              ? "PEDIDO CONFIRMADO" 
+              : "AGUARDANDO CONFIRMAÇÃO DO PAGAMENTO"
+            }
+          </b>
+          <span>Cliente: {orderDetails.customer}</span>
+          <div className="status-summary">
+            <span>Total</span>
+            <strong>{money(total)}</strong>
+            <span>Entrada</span>
+            <strong>{orderDetails.payment === "Dinheiro" ? "—" : money(entry)}</strong>
+            <span>Saldo</span>
+            <strong>
+              {orderDetails.payment === "Dinheiro" 
+                ? "Pagamento na entrega/retirada" 
+                : money(entry)
+              }
+            </strong>
+          </div>
+          <div className="status-line">
+            {STATUS_SEQ.map((s, i) => (
+              <i key={s} className={i <= idx ? "on" : ""}/>
+            ))}
+          </div>
+          <small>
+            Status atual: {STATUS_SEQ[idx]}. 
+            {orderDetails.confirmed 
+              ? "Valdir já confirmou a entrada. O pedido pode seguir para separação."
+              : orderDetails.payment === "Dinheiro" 
+              ? `Pagamento: dinheiro na ${orderDetails.delivery.toLowerCase() === "retirada" ? "retirada" : "entrega"}.`
+              : "A entrada de 50% ainda aguarda confirmação."
+            }
+          </small>
+        </div>
+        
+        {proofNeeded && !sent && (
+          <div className="proof-card">
+            <div>
+              <span className="eyebrow">entrada de 50% · {orderDetails.payment}</span>
+              <h2>Envie o comprovante</h2>
+              <p>Escolha uma foto da câmera ou da galeria. Você verá a imagem antes de enviar para Valdir.</p>
+            </div>
+            <div className="proof-pickers">
+              <label htmlFor="proof-camera">
+                <Camera size={18}/>
+                Tirar foto
+                <input 
+                  id="proof-camera" 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  onChange={e => handleFile(e.target.files?.[0])}
+                />
+              </label>
+              <label htmlFor="proof-gallery">
+                <ImageIcon size={18}/>
+                Escolher da galeria
+                <input 
+                  id="proof-gallery" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={e => handleFile(e.target.files?.[0])}
+                />
+              </label>
+            </div>
+            {proofPreview && (
+              <div className="proof-preview">
+                <img src={proofPreview}/>
+                <span>Pré-visualização do comprovante</span>
+                <Button variant="whatsapp" onClick={sendProof}>
+                  <HeartHandshake size={17}/>
+                  Enviar comprovante pelo WhatsApp
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {!proofNeeded && orderDetails.payment === "Dinheiro" && (
+          <div className="cash-note">
+            <DollarSign size={20}/>
+            <b>Pagamento: dinheiro na {orderDetails.delivery.toLowerCase() === "retirada" ? "retirada" : "entrega"}</b>
+            <span>Não é necessário enviar comprovante.</span>
+          </div>
+        )}
+        
+        <Button 
+          variant="whatsapp" 
+          onClick={() => toast.success("WhatsApp simulado aberto", {
+            description: `Pedido ${orderDetails.id} · ${orderDetails.customer}`
+          })}
+        >
+          <HeartHandshake size={17}/>
+          Falar com Valdir
+        </Button>
+        <Button onClick={() => go("home")}>Voltar ao catálogo</Button>
+        {clientAuth && (
+          <Button variant="ghost" onClick={() => go("account")}>Ver minha conta</Button>
+        )}
+      </main>
+      <BottomNav 
+        items={[
+          {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
+          {id: "cart", label: "Carrinho", icon: <ShoppingCart size={19}/>},
+          {id: "account", label: "Conta", icon: <UserRound size={19}/>}
+        ]} 
+        active="home" 
+        onSelect={(id) => go(id)}
+      />
+    </div>
+  );
+}
+
+function Account({go, clientAuth, clientScreen, setCart, notify}: any) {
+  const repeat = (o: any) => {
+    const c: Cart = {};
+    o.items.forEach((it: any) => {
+      c[it.id] = it.qty;
+    });
+    setCart(c);
+    notify("Pedido copiado para o carrinho com preços atuais.");
+    go("cart");
+  };
+
+  const [sel, setSel] = useState<any | null>(null);
+  
+  const nav = (
+    <BottomNav 
+      items={[
+        {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
+        {id: "cart", label: "Carrinho", icon: <ShoppingCart size={19}/>},
+        {id: "account", label: "Conta", icon: <UserRound size={19}/>}
+      ]} 
+      active="account" 
+      onSelect={id => go(id)}
+    />
+  );
+
+  if (clientScreen === "orderDetail" && sel) {
+    return (
+      <div className="app-shell">
+        <Header title="Detalhe do pedido" back onBack={() => go("account")} onLogo={() => go("home")}/>
+        <main className="page">
+          <div className="order-card">
+            <div>
+              <span className="eyebrow">{sel.date} · {sel.id}</span>
+              <b>{money(historyTotal(sel))}</b>
+            </div>
+            <span className="status-pill green">{sel.status}</span>
+          </div>
+          <div className="summary">
+            {sel.items.map((it: any) => (
+              <span key={it.id}>
+                {it.qty}x {products.find(p => p[0] === it.id)?.[1]} — {money(it.qty * it.price)}
+              </span>
+            ))}
+            <hr/>
+            <strong>Total</strong>
+            <strong className="total">{money(historyTotal(sel))}</strong>
+          </div>
+          <small className="muted">Preços praticados na data do pedido.</small>
+          <Button onClick={() => repeat(sel)}>
+            🔄 Repetir pedido <ArrowRight size={15}/>
+          </Button>
+          <Button variant="ghost" onClick={() => go("account")}>Voltar</Button>
+        </main>
+      </div>
+    );
+  }
+
+  if (clientScreen === "history") {
+    return (
+      <div className="app-shell">
+        <Header title="Histórico de pedidos" back onBack={() => go("account")} onLogo={() => go("home")}/>
+        <main className="page">
+          {mockHistory.map(o => (
+            <div className="order-card" key={o.id}>
+              <div>
+                <span className="eyebrow">{o.date} · {o.id}</span>
+                <b>{money(historyTotal(o))}</b>
+                <span>
+                  {o.items.map((it: any) => 
+                    `${it.qty}x ${products.find(p => p[0] === it.id)?.[1]}`
+                  ).join(", ")}
+                </span>
+              </div>
+              <span className="status-pill green">{o.status}</span>
+              <Button variant="soft" onClick={() => {setSel(o); go("orderDetail")}}>
+                Ver pedido <ArrowRight size={15}/>
+              </Button>
+              <Button variant="ghost" onClick={() => repeat(o)}>🔄 Repetir</Button>
+            </div>
+          ))}
+        </main>
+        {nav}
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <Header title="Minha conta" back onBack={() => go("home")} onLogo={() => go("home")}/>
+      <main className="page">
+        <div className="account-card">
+          <div className="avatar">M</div>
+          <div>
+            <b>Maria de Souza</b>
+            <span>Cliente autenticada · Google simulado</span>
+          </div>
+          <Check/>
+        </div>
+        <div className="section-head">
+          <h2>Seus pedidos</h2>
+          <button className="link-btn" onClick={() => go("history")}>
+            ver histórico <ArrowRight size={15}/>
+          </button>
+        </div>
+        {mockHistory.map(o => (
+          <div className="order-card" key={o.id}>
+            <div>
+              <span className="eyebrow">{o.date} · {o.id}</span>
+              <b>{money(historyTotal(o))}</b>
+              <span>
+                {o.items.map((it: any) => 
+                  `${it.qty}x ${products.find(p => p[0] === it.id)?.[1]}`
+                ).join(", ")}
+              </span>
+            </div>
+            <span className="status-pill green">{o.status}</span>
+            <Button variant="soft" onClick={() => {setSel(o); go("orderDetail")}}>
+              Ver pedido <ArrowRight size={15}/>
+            </Button>
+            <Button variant="ghost" onClick={() => repeat(o)}>🔄 Repetir pedido</Button>
+          </div>
+        ))}
+      </main>
+      {nav}
+    </div>
+  );
+}
+
+function Empty({title, text, action}: {title: string; text: string; action: () => void}) {
+  return (
+    <div className="empty">
+      <ShoppingBag size={32}/>
+      <h2>{title}</h2>
+      <p>{text}</p>
+      <Button onClick={action}>Ver catálogo</Button>
+    </div>
+  );
+}
+
+function ProtectedEntry({kind, onUnlock, onBack}: {
+  kind: "operator" | "manager";
+  onUnlock: () => void;
+  onBack: () => void;
+}) {
+  const manager = kind === "manager";
+  
+  return (
+    <div className={`app-shell protected-entry ${manager ? "manager-entry" : "operator-entry"}`}>
+      <div className="protected-mark">
+        <img src={IMG.logo}/>
+        <span>{manager ? "central do gestor" : "operação da loja"}</span>
+      </div>
+      <main className="page">
+        <span className="eyebrow">acesso protegido</span>
+        <h1>{manager ? "Olá, gestor." : "Olá, Valdir e família."}</h1>
+        <p>
+          {manager 
+            ? "Entre para acompanhar o movimento completo do Doces do Valdir."
+            : "Este espaço reúne os pedidos, produtos e entregas do dia."
+          }
+        </p>
+        <label>
+          Usuário
+          <input defaultValue={manager ? "gestor@docesdovaldir.demo" : "valdir@docesdovaldir.demo"}/>
+        </label>
+        <label>
+          Senha
+          <input type="password" defaultValue="demo123"/>
+        </label>
+        <Button onClick={onUnlock}>
+          Entrar no painel <ArrowRight size={17}/>
+        </Button>
+        <button className="link-btn protected-back" onClick={onBack}>
+          <ArrowLeft size={16}/>
+          voltar ao catálogo
+        </button>
+        <small className="demo-note">Autenticação simulada nesta etapa do protótipo.</small>
+      </main>
+    </div>
+  );
+}
+
+function OperatorApp({screen, setScreen, onExit}: {
+  screen: string;
+  setScreen: (s: string) => void;
+  onExit: () => void;
+}) {
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [routeDone, setRouteDone] = useState(false);
+  
+  const opNav = [
+    {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
+    {id: "orders", label: "Pedidos", icon: <ClipboardList size={19}/>},
+    {id: "routes", label: "Entregas", icon: <Truck size={19}/>}
+  ];
+
+  if (screen === "product") {
+    return (
+      <div className="app-shell operator">
+        <Header title="Novo produto" back onBack={() => setScreen("home")} onLogo={() => setScreen("home")}/>
+        <main className="page">
+          <span className="eyebrow">cadastro rápido</span>
+          <h1>Vamos colocar um produto na loja?</h1>
+          <div className="photo-capture">
+            <Plus size={30}/>
+            <b>Tirar foto</b>
+            <span>ou escolher da galeria</span>
+          </div>
+          <div className="crop-preview">
+            <img src={IMG.hero}/>
+            <span>enquadramento simulado</span>
+          </div>
+          <label>
+            Nome do produto
+            <input placeholder="Ex.: Doce de leite"/>
+          </label>
+          <div className="two-cols">
+            <label>
+              Preço de venda
+              <input placeholder="R$ 0,00"/>
+            </label>
+            <label>
+              Valor de custo
+              <input placeholder="R$ 0,00"/>
+            </label>
+          </div>
+          <label>
+            Quantidade disponível
+            <input placeholder="0"/>
+          </label>
+          <Button onClick={() => {
+            toast.success("Produto salvo no mock");
+            setScreen("home");
+          }}>
+            Salvar produto <Check size={17}/>
+          </Button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "orders") {
+    return (
+      <div className="app-shell operator">
+        <Header title="Pedidos do dia" subtitle="Tudo em um só lugar" back onBack={() => setScreen("home")} onLogo={() => setScreen("home")}/>
+        <main className="page">
+          <div className="urgent-banner">
+            <Zap/>
+            <div>
+              <b>2 pedidos urgentes</b>
+              <span>Olhe primeiro para eles</span>
+            </div>
+          </div>
+          <div className="status-tabs">
+            <b>NOVOS <i>2</i></b>
+            <span>EM ANDAMENTO 3</span>
+            <span>PRONTOS 1</span>
+          </div>
+          {mockOrders.slice(0, 5).map(o => (
+            <div 
+              key={o.id} 
+              className={`op-order ${o.urgent ? "urgent-order" : ""}`} 
+              onClick={() => {setSelectedOrder(o); setScreen("order")}}
+            >
+              {o.urgent && <span className="urgent-label">🚨 URGENTE</span>}
+              <div>
+                <b>{o.name}</b>
+                <span>{o.id} · {o.region}</span>
+                <small>{o.items}</small>
+              </div>
+              <div>
+                <strong>{money(o.total)}</strong>
+                <span className="status-pill">{o.status}</span>
+              </div>
+            </div>
+          ))}
+        </main>
+        <BottomNav items={opNav} active="orders" onSelect={setScreen}/>
+      </div>
+    );
+  }
+
+  if (screen === "order" && selectedOrder) {
+    return (
+      <div className="app-shell operator">
+        <Header title={selectedOrder.id} back onBack={() => setScreen("orders")} onLogo={() => setScreen("home")}/>
+        <main className="page">
+          <div className="op-detail-head">
+            {selectedOrder.urgent && <span className="urgent-label">🚨 PEDIDO URGENTE</span>}
+            <h1>{selectedOrder.name}</h1>
+            <span>{selectedOrder.city} · {selectedOrder.region}</span>
+          </div>
+          <div className="summary">
+            <span>Total</span>
+            <b>{money(selectedOrder.total)}</b>
+            <span>Entrada 50%</span>
+            <b>{money(selectedOrder.total / 2)}</b>
+            <span>Saldo</span>
+            <b>{money(selectedOrder.total / 2)}</b>
+            <span>Pagamento</span>
+            <b>{selectedOrder.pay}</b>
+          </div>
+          <div className="timeline">
+            <b>Fluxo do pedido</b>
+            {STATUS_SEQ.map((s, i) => (
+              <div className={i < 3 ? "done" : i === 3 ? "current" : ""} key={s}>
+                <i>{i < 3 ? <Check size={13}/> : i + 1}</i>
+                <span>{s}</span>
+              </div>
+            ))}
+          </div>
+          <Button onClick={() => toast.success("Entrada de 50% confirmada", {
+            description: "Pedido avançou para SEPARANDO"
+          })}>
+            Confirmar entrada 50%
+          </Button>
+          <Button variant="soft" onClick={() => toast.success("Pagamento total confirmado")}>
+            Confirmar pagamento total
+          </Button>
+        </main>
+      </div>
+    );
+  }
+
+  if (screen === "routes") {
+    return (
+      <div className="app-shell operator">
+        <Header title="Entregas" subtitle="Quarta-feira, 12 de agosto" back onBack={() => setScreen("home")} onLogo={() => setScreen("home")}/>
+        <main className="page">
+          <div className="route-card">
+            <div className="route-title">
+              <Truck/>
+              <div>
+                <b>Rota Zona Norte</b>
+                <span>8 pedidos · 2 urgentes</span>
+              </div>
+              <span className="status-pill green">pronta</span>
+            </div>
+            <div className="route-progress">
+              <div style={{width: routeDone ? "100%" : "0%"}}/>
+            </div>
+            <p>
+              {routeDone 
+                ? "Rota finalizada. 1 pedido ficou pendente."
+                : "Valdir não precisa marcar pedido por pedido na rua."
+              }
+            </p>
+            <Button onClick={() => {
+              setRouteDone(true);
+              toast.success("Rota finalizada em lote");
+            }}>
+              {routeDone ? "Rota finalizada" : "Finalizar rota"} <Check size={17}/>
+            </Button>
+          </div>
+          {routeDone && (
+            <div className="pending-card">
+              <span className="urgent-label">PENDENTE DE ENTREGA</span>
+              <b>Rafael Souza · DV-1043</b>
+              <span>Não estava em casa</span>
+              <div>
+                <Button variant="soft" onClick={() => toast.success("Pendência reagendada")}>
+                  Reagendar
+                </Button>
+                <Button variant="ghost" onClick={() => toast.success("Contato simulado")}>
+                  Falar com cliente
+                </Button>
+              </div>
+            </div>
+          )}
+        </main>
+        <BottomNav items={opNav} active="routes" onSelect={setScreen}/>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell operator">
+      <Header onLogo={() => setScreen("home")}/>
+      <main className="page operator-home">
+        <div className="hello">
+          <span>painel do dia</span>
+          <h1>Olá, Valdir!</h1>
+          <p>Vamos deixar tudo pronto com calma.</p>
+        </div>
+        <div className="op-grid">
+          <button onClick={() => setScreen("product")}>
+            <Plus/>
+            <b>Novo produto</b>
+            <span>tirar foto e cadastrar</span>
+          </button>
+          <button onClick={() => toast.success("Meus produtos: 16 no catálogo")}>
+            <Package/>
+            <b>Meus produtos</b>
+            <span>16 disponíveis</span>
+          </button>
+          <button onClick={() => setScreen("orders")}>
+            <ClipboardList/>
+            <b>Pedidos</b>
+            <span>2 precisam de atenção</span>
+          </button>
+          <button onClick={() => setScreen("routes")}>
+            <Truck/>
+            <b>Entregas</b>
+            <span>rota Zona Norte</span>
+          </button>
+        </div>
+        <div className="simple-banner">
+          <HeartHandshake/>
+          <div>
+            <b>Ficou com dúvida?</b>
+            <span>Chame o gestor para ajudar.</span>
+          </div>
+        </div>
+        <button className="exit-role" onClick={onExit}>Trocar experiência</button>
+      </main>
+      <BottomNav items={opNav} active="home" onSelect={setScreen}/>
+    </div>
+  );
+}
+
+function ManagerApp({tab, setTab, onExit}: {
+  tab: string;
+  setTab: (s: string) => void;
+  onExit: () => void;
+}) {
+  const items = [
+    {id: "dashboard", label: "Visão geral", icon: <LayoutDashboard/>},
+    {id: "products", label: "Produtos", icon: <Package/>},
+    {id: "stock", label: "Estoque", icon: <ClipboardList/>},
+    {id: "orders", label: "Pedidos", icon: <ShoppingCart/>},
+    {id: "clients", label: "Clientes", icon: <Users/>},
+    {id: "reports", label: "Relatórios", icon: <BarChart3/>},
+    {id: "routes", label: "Rotas", icon: <Truck/>},
+    {id: "araraquara", label: "Araraquara", icon: <MapPin/>},
+    {id: "settings", label: "Configurações", icon: <Settings/>}
+  ];
+
+  const title = items.find(i => i.id === tab)?.label || "Dashboard";
+
+  return (
+    <div className="app-shell manager">
+      <Header title={title} subtitle="Painel gestor" onLogo={() => setTab("dashboard")}/>
+      <main className="page manager-page">
+        {tab === "dashboard" && (
+          <>
+            <div className="manager-welcome">
+              <div>
+                <span>terça-feira, 12 de agosto</span>
+                <h1>Bom dia, gestor.</h1>
+              </div>
+              <div className="avatar orange">V</div>
+            </div>
+            <div className="metric-grid">
+              <Metric label="Vendas do mês" value="R$ 8.420" trend="+12%"/>
+              <Metric label="Pedidos" value="48" trend="+8 novos"/>
+              <Metric label="Lucro bruto" value="R$ 3.186" trend="37,8% margem"/>
+              <Metric label="Estoque baixo" value="3" trend="ver produtos" alert/>
+            </div>
+            <div className="dashboard-card">
+              <div className="section-head">
+                <h2>Vendas por semana</h2>
+                <span className="muted">agosto 2026</span>
+              </div>
+              <div className="bars">
+                <i style={{height: "42%"}}/>
+                <i style={{height: "64%"}}/>
+                <i style={{height: "50%"}}/>
+                <i style={{height: "78%"}}/>
+                <i style={{height: "58%"}}/>
+                <i style={{height: "88%"}}/>
+                <i style={{height: "70%"}}/>
+              </div>
+              <div className="days">
+                <span>seg</span>
+                <span>ter</span>
+                <span>qua</span>
+                <span>qui</span>
+                <span>sex</span>
+                <span>sáb</span>
+                <span>dom</span>
+              </div>
+            </div>
+            <div className="split-cards">
+              <div>
+                <Zap/>
+                <b>2 urgentes</b>
+                <span>pedidos para olhar</span>
+              </div>
+              <div>
+                <Truck/>
+                <b>1 pendência</b>
+                <span>de entrega</span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {tab === "products" && (
+          <ManagerList 
+            title="Produtos" 
+            subtitle="16 itens no catálogo" 
+            rows={products.slice(0, 7).map(p => ({
+              name: p[1],
+              meta: `${p[6]} em estoque · ${p[2]}`,
+              value: money(Number(p[3].replace(",", ".")))
+            }))} 
+            action="Novo produto"
+          />
+        )}
+
+        {tab === "stock" && (
+          <ManagerList 
+            title="Estoque" 
+            subtitle="Acompanhe o que precisa de atenção" 
+            rows={products.slice(0, 6).map(p => ({
+              name: p[1],
+              meta: `mínimo 10 unidades`,
+              value: `${p[6]} un.`,
+              alert: p[6] < 10
+            }))} 
+            action="Ajustar estoque"
+          />
+        )}
+
+        {tab === "orders" && (
+          <ManagerList 
+            title="Pedidos" 
+            subtitle="8 pedidos recentes" 
+            rows={mockOrders.map(o => ({
+              name: `${o.id} · ${o.name}`,
+              meta: `${o.city} · ${o.pay}`,
+              value: money(o.total),
+              alert: o.urgent
+            }))} 
+            action="Filtrar status"
+          />
+        )}
+
+        {tab === "clients" && (
+          <ManagerList 
+            title="Clientes" 
+            subtitle="Base de clientes fictícia" 
+            rows={["Maria de Souza", "Dona Célia", "Marcos Lima", "Ana Paula", "João Ferreira"].map((n, i) => ({
+              name: n,
+              meta: `${i + 2} pedidos · último em agosto`,
+              value: i % 2 === 0 ? "ativo" : "cadastrado"
+            }))} 
+            action="Exportar lista"
+          />
+        )}
+
+        {tab === "reports" && <Reports/>}
+
+        {tab === "routes" && (
+          <ManagerList 
+            title="Rotas" 
+            subtitle="Regiões e pendências" 
+            rows={["Zona Norte", "Centro", "Zona Sul", "Zona Leste"].map((n, i) => ({
+              name: n,
+              meta: `quarta-feira · ${i + 2} pedidos`,
+              value: i === 0 ? "2 urgentes" : "organizada"
+            }))} 
+            action="Organizar rota"
+          />
+        )}
+
+        {tab === "araraquara" && (
+          <div className="settings-card">
+            <span className="eyebrow">encomendas</span>
+            <h1>Araraquara</h1>
+            <p>Próxima data definida para reunir os pedidos dessa cidade.</p>
+            <div className="date-box">
+              <MapPin/>
+              <b>15/08/2026</b>
+              <span>próxima encomenda</span>
+            </div>
+            <Button onClick={() => toast.success("Data de encomenda editada no mock")}>
+              Alterar data <Pencil size={16}/>
+            </Button>
+          </div>
+        )}
+
+        {tab === "settings" && <SettingsPanel/>}
+      </main>
+      <nav className="manager-nav">
+        {items.map(i => (
+          <button 
+            key={i.id} 
+            className={tab === i.id ? "active" : ""} 
+            onClick={() => setTab(i.id)}
+          >
+            {i.icon}
+            <span>{i.label}</span>
+          </button>
+        ))}
+        <button onClick={onExit}>
+          <X/>
+          <span>Sair</span>
+        </button>
+      </nav>
+    </div>
+  );
+}
+
+function Metric({label, value, trend, alert}: {
+  label: string;
+  value: string;
+  trend: string;
+  alert?: boolean;
+}) {
+  return (
+    <div className={`metric ${alert ? "alert" : ""}`}>
+      <span>{label}</span>
+      <b>{value}</b>
+      <small>{trend}</small>
+    </div>
+  );
+}
+
+function ManagerList({title, subtitle, rows, action}: {
+  title: string;
+  subtitle: string;
+  rows: any[];
+  action: string;
+}) {
+  return (
+    <>
+      <div className="list-head">
+        <div>
+          <span className="eyebrow">gestão</span>
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
+        </div>
+        <Button onClick={() => toast.success(`${action} simulado`)}>
+          <Plus size={16}/>
+          {action}
+        </Button>
+      </div>
+      <div className="manager-list">
+        {rows.map((r, i) => (
+          <div className="manager-row" key={i}>
+            <div className="mini-avatar">{r.name[0]}</div>
+            <div>
+              <b>{r.name}</b>
+              <span>{r.meta}</span>
+            </div>
+            <strong className={r.alert ? "red" : ""}>{r.value}</strong>
+            <ChevronRight size={17}/>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function Reports() {
+  return (
+    <div>
+      <span className="eyebrow">inteligência da loja</span>
+      <h1>Relatórios</h1>
+      <div className="report-tabs">
+        <button className="active">Vendas</button>
+        <button>Custos</button>
+        <button>Lucro</button>
+        <button>Margem</button>
+      </div>
+      <div className="report-big">
+        <span>Vendas no período</span>
+        <b>R$ 8.420,00</b>
+        <small>01–12 agosto 2026 · +12% vs. anterior</small>
+        <div className="line-chart">
+          <i/>
+          <i/>
+          <i/>
+          <i/>
+          <i/>
+          <i/>
+          <i/>
+        </div>
+      </div>
+      <div className="report-card">
+        <b>Produtos mais lucrativos</b>
+        <span>1. Doce de leite <strong>R$ 486</strong></span>
+        <span>2. Paçoca rolha <strong>R$ 320</strong></span>
+        <span>3. Chocolate <strong>R$ 218</strong></span>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPanel() {
+  return (
+    <div>
+      <span className="eyebrow">administração</span>
+      <h1>Configurações</h1>
+      <div className="settings-list">
+        <div>
+          <WalletCards/>
+          <span>
+            <b>Chave PIX</b>
+            <small>doces.valdir@demo.com</small>
+          </span>
+          <ChevronRight/>
+        </div>
+        <div>
+          <UserRound/>
+          <span>
+            <b>Nome do titular</b>
+            <small>Valdir de Souza</small>
+          </span>
+          <ChevronRight/>
+        </div>
+        <div>
+          <HeartHandshake/>
+          <span>
+            <b>WhatsApp de Valdir</b>
+            <small>configurado no mock</small>
+          </span>
+          <ChevronRight/>
+        </div>
+        <div>
+          <Store/>
+          <span>
+            <b>Retirada</b>
+            <small>ativa</small>
+          </span>
+          <ChevronRight/>
+        </div>
+        <div>
+          <Users/>
+          <span>
+            <b>Usuários e permissões</b>
+            <small>1 gestor · 2 operadores</small>
+          </span>
+          <ChevronRight/>
+        </div>
+      </div>
+    </div>
+  );
+}
