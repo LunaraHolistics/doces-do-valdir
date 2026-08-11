@@ -1,5 +1,5 @@
-/* Produtos do Valdir — protótipo navegável. Verde protagonista; terracota apenas para urgência/pendências. */
-import { useMemo, useState } from "react";
+/* Produtos do Valdir — catálogo real via Supabase + acesso protegido com Supabase Auth. */
+import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft, ArrowRight, BarChart3, Camera, Check, ChevronRight, ClipboardList,
@@ -7,6 +7,8 @@ import {
   LayoutDashboard, MapPin, Package, Pencil, Plus, Search, Settings, ShoppingBag,
   ShoppingCart, Store, Trash2, Truck, UserRound, Users, WalletCards, X, Zap
 } from "lucide-react";
+import { supabase, hasSupabase } from "../lib/supabase";
+import { signIn, signOut, getRole, onAuthChange, currentSession } from "../lib/auth";
 
 const IMG = {
   hero: "/manus-storage/hero-doces_8c4d1eff.jpg",
@@ -22,27 +24,33 @@ const IMG = {
 const money = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const products = [
-  ["p1","Doce de leite cremoso","Doces","12,90",IMG.doces,"Pote 400g, textura cremosa e sabor de fazenda.",18],
-  ["p2","Paçoca rolha","Doces","7,50",IMG.doces,"Pacotinho com 6 unidades.",24],
-  ["p3","Pé de moleque","Doces","8,90",IMG.doces,"Crocante, feito com amendoim selecionado.",14],
-  ["p4","Doce de amendoim","Doces","6,90",IMG.doces,"Doce macio em embalagem individual.",21],
-  ["p5","Bala sortida","Balas","5,00",IMG.balas,"Mix colorido para adoçar o dia.",42],
-  ["p6","Bala de goma","Balas","6,50",IMG.balas,"Pacote 200g com sabores variados.",27],
-  ["p7","Chiclete hortelã","Balas","3,90",IMG.balas,"Cartela com 10 unidades.",36],
-  ["p8","Pirulito coração","Balas","1,50",IMG.balas,"Unidade, sabores sortidos.",56],
-  ["p9","Salgadinho queijo","Lanches","4,90",IMG.lanches,"Pacote crocante 90g.",33],
-  ["p10","Biscoito caseiro","Lanches","7,90",IMG.lanches,"Pacote 250g.",16],
-  ["p11","Chocolate ao leite","Lanches","6,90",IMG.lanches,"Barra 90g.",19],
-  ["p12","Suco em pó uva","Lanches","1,99",IMG.lanches,"Rende 1 litro.",48],
-  ["p13","Pilha AA","Utilidades","12,00",IMG.utilidades,"Cartela com 2 unidades.",11],
-  ["p14","Pilha AAA","Utilidades","12,00",IMG.utilidades,"Cartela com 2 unidades.",8],
-  ["p15","Caixa de fósforos","Utilidades","3,50",IMG.utilidades,"Caixa com 40 palitos.",17],
-  ["p16","Vela de aniversário","Utilidades","4,00",IMG.utilidades,"Kit com 10 unidades.",29],
-] as const;
+const moneyFromCents = (cents: number) => money(cents / 100);
 
-type Product = typeof products[number];
-type Cart = Record<string, number>;
+const MOCK_PRODUCTS = [
+  {id:"p1",category_id:1,name:"Doce de leite cremoso",description:"Pote 400g, textura cremosa e sabor de fazenda.",price_cents:1290,cost_cents:700,stock:18,image_url:IMG.doces},
+  {id:"p2",category_id:1,name:"Paçoca rolha",description:"Pacotinho com 6 unidades.",price_cents:750,cost_cents:400,stock:24,image_url:IMG.doces},
+  {id:"p3",category_id:1,name:"Pé de moleque",description:"Crocante, feito com amendoim selecionado.",price_cents:890,cost_cents:480,stock:14,image_url:IMG.doces},
+  {id:"p4",category_id:1,name:"Doce de amendoim",description:"Doce macio em embalagem individual.",price_cents:690,cost_cents:350,stock:21,image_url:IMG.doces},
+  {id:"p5",category_id:2,name:"Bala sortida",description:"Mix colorido para adoçar o dia.",price_cents:500,cost_cents:250,stock:42,image_url:IMG.balas},
+  {id:"p6",category_id:2,name:"Bala de goma",description:"Pacote 200g com sabores variados.",price_cents:650,cost_cents:320,stock:27,image_url:IMG.balas},
+  {id:"p7",category_id:2,name:"Chiclete hortelã",description:"Cartela com 10 unidades.",price_cents:390,cost_cents:180,stock:36,image_url:IMG.balas},
+  {id:"p8",category_id:2,name:"Pirulito coração",description:"Unidade, sabores sortidos.",price_cents:150,cost_cents:60,stock:56,image_url:IMG.balas},
+  {id:"p9",category_id:3,name:"Salgadinho queijo",description:"Pacote crocante 90g.",price_cents:490,cost_cents:260,stock:33,image_url:IMG.lanches},
+  {id:"p10",category_id:3,name:"Biscoito caseiro",description:"Pacote 250g.",price_cents:790,cost_cents:420,stock:16,image_url:IMG.lanches},
+  {id:"p11",category_id:3,name:"Chocolate ao leite",description:"Barra 90g.",price_cents:690,cost_cents:380,stock:19,image_url:IMG.lanches},
+  {id:"p12",category_id:3,name:"Suco em pó uva",description:"Rende 1 litro.",price_cents:199,cost_cents:90,stock:48,image_url:IMG.lanches},
+  {id:"p13",category_id:4,name:"Pilha AA",description:"Cartela com 2 unidades.",price_cents:1200,cost_cents:700,stock:11,image_url:IMG.utilidades},
+  {id:"p14",category_id:4,name:"Pilha AAA",description:"Cartela com 2 unidades.",price_cents:1200,cost_cents:700,stock:8,image_url:IMG.utilidades},
+  {id:"p15",category_id:4,name:"Caixa de fósforos",description:"Caixa com 40 palitos.",price_cents:350,cost_cents:150,stock:17,image_url:IMG.utilidades},
+  {id:"p16",category_id:4,name:"Vela de aniversário",description:"Kit com 10 unidades.",price_cents:400,cost_cents:180,stock:29,image_url:IMG.utilidades},
+];
+
+const MOCK_CATEGORIES = [
+  {id:1,name:"Doces",sort:1},
+  {id:2,name:"Balas",sort:2},
+  {id:3,name:"Lanches",sort:3},
+  {id:4,name:"Utilidades",sort:4},
+];
 
 const STATUS_SEQ = [
   "NOVO",
@@ -218,7 +226,7 @@ function WhatsApp({text = "Olá, Valdir! Estou vendo o catálogo da loja e gosta
 }
 
 function ProductCard({p, qty, onAdd, onOpen}: {
-  p: Product;
+  p: any;
   qty: number;
   onAdd: () => void;
   onOpen: () => void;
@@ -226,13 +234,13 @@ function ProductCard({p, qty, onAdd, onOpen}: {
   return (
     <article className="product-card" onClick={onOpen}>
       <div className="product-img">
-        <img src={p[4]}/>
-        {p[0] === "p1" && <span className="tag">favorito da casa</span>}
+        <img src={p.image_url}/>
+        {p.id === "p1" && <span className="tag">favorito da casa</span>}
       </div>
       <div className="product-info">
-        <h3>{p[1]}</h3>
-        <span className="stock">{p[6]} disponíveis</span>
-        <strong>{money(Number(p[3].replace(",", ".")))}</strong>
+        <h3>{p.name}</h3>
+        <span className="stock">{p.stock} disponíveis</span>
+        <strong>{moneyFromCents(p.price_cents)}</strong>
         <div className="card-action" onClick={e => {e.stopPropagation(); onAdd()}}>
           {qty > 0 ? (
             <>
@@ -253,19 +261,81 @@ function ProductCard({p, qty, onAdd, onOpen}: {
 }
 
 export default function Home() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // ---- Sessão real (Supabase Auth) ----
+  const [authUser, setAuthUser] = useState<string | null>(null);
+  const [authRole, setAuthRole] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(!hasSupabase);
+
+  useEffect(() => {
+    if (!hasSupabase) {
+      setAuthReady(true);
+      return;
+    }
+    const init = async () => {
+      const session = await currentSession();
+      const uid = session?.user?.id || null;
+      setAuthUser(uid);
+      if (uid) setAuthRole(await getRole(uid));
+      setAuthReady(true);
+    };
+    init();
+    const sub = onAuthChange((uid) => {
+      setAuthUser(uid);
+      if (uid) getRole(uid).then(setAuthRole);
+      else setAuthRole(null);
+    });
+    return () => sub.data.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!hasSupabase) {
+        setProducts(MOCK_PRODUCTS);
+        setCategories(MOCK_CATEGORIES);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const [prodRes, catRes] = await Promise.all([
+          supabase.from("products").select("*").eq("active", true).order("name"),
+          supabase.from("categories").select("*").eq("active", true).order("sort")
+        ]);
+
+        if (prodRes.data && prodRes.data.length > 0) {
+          setProducts(prodRes.data);
+          setCategories(catRes.data || []);
+        } else {
+          setProducts(MOCK_PRODUCTS);
+          setCategories(MOCK_CATEGORIES);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar do Supabase:", err);
+        setProducts(MOCK_PRODUCTS);
+        setCategories(MOCK_CATEGORIES);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
   const initialPath = typeof window !== "undefined" ? window.location.pathname : "/";
   const [experience, setExperience] = useState<"client" | "operator" | "manager">(
     initialPath.startsWith("/operacao") ? "operator" :
     initialPath.startsWith("/gestao") ? "manager" : "client"
   );
-  const [accessGranted, setAccessGranted] = useState(
-    !initialPath.startsWith("/operacao") && !initialPath.startsWith("/gestao")
-  );
+  const [accessGranted, setAccessGranted] = useState(false);
   const [clientScreen, setClientScreen] = useState("home");
-  const [selected, setSelected] = useState<Product | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
   const [category, setCategory] = useState("Todos");
   const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<Cart>({p1: 1, p5: 2});
+  const [cart, setCart] = useState<Record<string, number>>({p1: 1, p5: 2});
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [orderSent, setOrderSent] = useState(false);
   const [orderDetails, setOrderDetails] = useState<any>({
@@ -282,16 +352,26 @@ export default function Home() {
   const [managerTab, setManagerTab] = useState("dashboard");
   const [toastText, setToastText] = useState("");
 
+  // Libera automaticamente se já existe sessão com papel correto
+  useEffect(() => {
+    if (!authReady) return;
+    const ok = experience === "manager"
+      ? authRole === "manager"
+      : (authRole === "operator" || authRole === "manager");
+    if (ok) setAccessGranted(true);
+  }, [authReady, authRole, experience]);
+
   const cartItems = useMemo(() =>
     Object.entries(cart)
       .filter(([, q]) => q > 0)
-      .map(([id, q]) => ({p: products.find(p => p[0] === id)!, q})),
-    [cart]
+      .map(([id, q]) => ({p: products.find(p => p.id === id), q}))
+      .filter(({p}) => p),
+    [cart, products]
   );
 
   const cartTotal = cartItems.reduce((s, {p, q}) =>
-    s + Number(p[3].replace(",", ".")) * q, 0
-  );
+    s + (p?.price_cents || 0) * q, 0
+  ) / 100;
 
   const add = (id: string) => setCart(c => ({...c, [id]: (c[id] || 0) + 1}));
   const remove = (id: string) => setCart(c => ({...c, [id]: Math.max(0, (c[id] || 0) - 1)}));
@@ -308,13 +388,33 @@ export default function Home() {
 
   const leaveProtectedArea = () => {
     window.history.pushState({}, "", "/");
-    setAccessGranted(true);
+    setAccessGranted(false);
     setExperience("client");
   };
+
+  const signOutAndLeave = async () => {
+    if (hasSupabase) await signOut();
+    setAccessGranted(false);
+    setAuthRole(null);
+    leaveProtectedArea();
+    toast.success("Você saiu da conta.");
+  };
+
+  if (loading) {
+    return (
+      <div className="app-shell" style={{display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh"}}>
+        <div style={{textAlign: "center", color: "#66564e"}}>
+          <p>Carregando catálogo...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (experience === "client") {
     return (
       <ClientApp
+        products={products}
+        categories={categories}
         clientScreen={clientScreen}
         setClientScreen={setClientScreen}
         selected={selected}
@@ -344,6 +444,14 @@ export default function Home() {
     );
   }
 
+  if (!authReady) {
+    return (
+      <div className="app-shell" style={{display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh"}}>
+        <p style={{color: "#66564e"}}>Verificando acesso...</p>
+      </div>
+    );
+  }
+
   if (!accessGranted) {
     return (
       <ProtectedEntry
@@ -355,24 +463,39 @@ export default function Home() {
   }
 
   if (experience === "operator") {
-    return <OperatorApp screen={opScreen} setScreen={setOpScreen} onExit={leaveProtectedArea}/>;
+    return (
+      <OperatorApp
+        screen={opScreen}
+        setScreen={setOpScreen}
+        onExit={leaveProtectedArea}
+        onSignOut={signOutAndLeave}
+      />
+    );
   }
 
-  return <ManagerApp tab={managerTab} setTab={setManagerTab} onExit={leaveProtectedArea}/>;
+  return (
+    <ManagerApp
+      tab={managerTab}
+      setTab={setManagerTab}
+      onExit={leaveProtectedArea}
+      onSignOut={signOutAndLeave}
+    />
+  );
 }
 
 function ClientApp(props: any) {
   const {
-    clientScreen, setClientScreen, selected, setSelected, category, setCategory,
-    query, setQuery, cart, cartItems, cartTotal, add, remove, clear,
+    products, categories, clientScreen, setClientScreen, selected, setSelected,
+    category, setCategory, query, setQuery, cart, cartItems, cartTotal, add, remove, clear,
     clientAuth, setClientAuth, notify
   } = props;
 
-  const cats = ["Todos", "Doces", "Balas", "Lanches", "Utilidades"];
-  const filtered = products.filter((p: Product) =>
-    (category === "Todos" || p[2] === category) &&
-    p[1].toLowerCase().includes(query.toLowerCase())
-  );
+  const cats = ["Todos", ...categories.map((c: any) => c.name)];
+  const filtered = products.filter((p: any) => {
+    const catName = categories.find((c: any) => c.id === p.category_id)?.name || "Outros";
+    return (category === "Todos" || catName === category) &&
+      p.name.toLowerCase().includes(query.toLowerCase());
+  });
 
   const go = (s: string) => {
     setClientScreen(s);
@@ -402,27 +525,27 @@ function ClientApp(props: any) {
           onLogo={() => go("home")}
         />
         <main className="page">
-          <img className="product-hero" src={selected[4]}/>
+          <img className="product-hero" src={selected.image_url}/>
           <div className="product-detail">
-            <span className="eyebrow">{selected[2]} · {selected[6]} disponíveis</span>
-            <h1>{selected[1]}</h1>
-            <p>{selected[5]}</p>
-            <strong className="price-lg">{money(Number(selected[3].replace(",", ".")))}</strong>
+            <span className="eyebrow">{categories.find((c: any) => c.id === selected.category_id)?.name} · {selected.stock} disponíveis</span>
+            <h1>{selected.name}</h1>
+            <p>{selected.description}</p>
+            <strong className="price-lg">{moneyFromCents(selected.price_cents)}</strong>
             <div className="qty-line">
               <span>Quantidade</span>
               <div className="qty">
-                <button onClick={() => remove(selected[0])}>−</button>
-                <b>{cart[selected[0]] || 0}</b>
-                <button onClick={() => add(selected[0])}>+</button>
+                <button onClick={() => remove(selected.id)}>−</button>
+                <b>{cart[selected.id] || 0}</b>
+                <button onClick={() => add(selected.id)}>+</button>
               </div>
             </div>
-            <Button onClick={() => {add(selected[0]); notify("Produto adicionado ao carrinho");}}>
+            <Button onClick={() => {add(selected.id); notify("Produto adicionado ao carrinho");}}>
               Adicionar ao carrinho <ArrowRight size={17}/>
             </Button>
             <Button
               variant="ghost"
               onClick={() => toast.success("WhatsApp simulado", {
-                description: `Olá, Valdir! Tenho uma dúvida sobre ${selected[1]}.`
+                description: `Olá, Valdir! Tenho uma dúvida sobre ${selected.name}.`
               })}
             >
               <HeartHandshake size={17}/>
@@ -451,25 +574,25 @@ function ClientApp(props: any) {
             <>
               <div className="cart-list">
                 {cartItems.map(({p, q}: any) => (
-                  <div className="cart-row" key={p[0]}>
-                    <img src={p[4]}/>
+                  <div className="cart-row" key={p.id}>
+                    <img src={p.image_url}/>
                     <div>
-                      <b>{p[1]}</b>
-                      <span>{money(Number(p[3].replace(",", ".")))} cada</span>
+                      <b>{p.name}</b>
+                      <span>{moneyFromCents(p.price_cents)} cada</span>
                       <div className="qty">
-                        <button onClick={() => remove(p[0])}>−</button>
+                        <button onClick={() => remove(p.id)}>−</button>
                         <b>{q}</b>
-                        <button onClick={() => add(p[0])}>+</button>
+                        <button onClick={() => add(p.id)}>+</button>
                         <button
                           className="trash"
                           title="Remover"
-                          onClick={() => clear(p[0])}
+                          onClick={() => clear(p.id)}
                         >
                           <Trash2 size={15}/>
                         </button>
                       </div>
                     </div>
-                    <strong>{money(Number(p[3].replace(",", ".")) * q)}</strong>
+                    <strong>{money(p.price_cents * q / 100)}</strong>
                   </div>
                 ))}
               </div>
@@ -569,12 +692,12 @@ function ClientApp(props: any) {
           ))}
         </div>
         <div className="featured" onClick={() => {setSelected(products[0]); go("product")}}>
-          <img src={IMG.doces}/>
+          <img src={products[0]?.image_url || IMG.doces}/>
           <div>
             <span className="tag">favorito da casa</span>
-            <h2>Doce de leite cremoso</h2>
-            <p>Uma colherada e você entende.</p>
-            <b>{money(12.9)}</b>
+            <h2>{products[0]?.name || "Doce de leite cremoso"}</h2>
+            <p>{products[0]?.description || "Uma colherada e você entende."}</p>
+            <b>{moneyFromCents(products[0]?.price_cents || 1290)}</b>
           </div>
           <ArrowRight/>
         </div>
@@ -583,12 +706,12 @@ function ClientApp(props: any) {
           <span className="muted">{filtered.length} produtos</span>
         </div>
         <div className="product-grid">
-          {filtered.map((p: Product) => (
+          {filtered.map((p: any) => (
             <ProductCard
-              key={p[0]}
+              key={p.id}
               p={p}
-              qty={cart[p[0]] || 0}
-              onAdd={() => {add(p[0]); notify(`${p[1]} foi para o carrinho`)}}
+              qty={cart[p.id] || 0}
+              onAdd={() => {add(p.id); notify(`${p.name} foi para o carrinho`)}}
               onOpen={() => {setSelected(p); go("product")}}
             />
           ))}
@@ -604,6 +727,7 @@ function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrder
   const [delivery, setDelivery] = useState("Entrega");
   const [urgent, setUrgent] = useState(false);
   const [payment, setPayment] = useState("PIX");
+  const [payFull, setPayFull] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -612,10 +736,12 @@ function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrder
   const [num, setNum] = useState("");
   const [district, setDistrict] = useState("");
   const [region, setRegion] = useState("Zona Norte");
+  const [submitting, setSubmitting] = useState(false);
 
   const entry = cartTotal / 2;
-  const needsEntry = payment !== "Dinheiro";
-  const orderNumber = "DV-1049";
+  const needsEntry = payment !== "Dinheiro" && !payFull;
+  const amountToPay = needsEntry ? entry : cartTotal;
+  const orderNumber = "DV-" + Math.floor(1000 + Math.random() * 9000);
 
   const addressLine = city === "Araraquara"
     ? "Encomenda — combinação de retirada/envio"
@@ -632,13 +758,83 @@ Local: ${localName || "—"}
 Endereço: ${addressLine}
 Região: ${city === "Araraquara" ? "Encomenda" : region}
 Itens:
-${cartItems.map(({p, q}: any) => `• ${q}x ${p[1]} — ${money(Number(p[3].replace(",", ".")) * q)}`).join("\n")}
+${cartItems.map(({p, q}: any) => `• ${q}x ${p.name} — ${money(p.price_cents * q / 100)}`).join("\n")}
 Total: ${money(cartTotal)}
 Pagamento: ${payment}
-Entrada: ${needsEntry ? money(entry) : "— (pagamento total na entrega/retirada)"}
-Saldo: ${needsEntry ? money(entry) : "—"}
+Valor a pagar: ${money(amountToPay)} (${payFull && payment !== "Dinheiro" ? "integral" : needsEntry ? "entrada 50%" : "total na entrega/retirada"})
+${needsEntry ? `Saldo: ${money(entry)}` : ""}
 Urgente: ${urgent ? "🚨 SIM — o quanto antes" : "não"}
 Obs: —`;
+
+  const submitOrder = async () => {
+    setSubmitting(true);
+
+    try {
+      let accessCode = null;
+
+      if (hasSupabase) {
+        const orderData = {
+          customer_name: name || "Visitante",
+          customer_phone: phone || "",
+          city,
+          delivery_mode: city === "Araraquara" ? "ENCOMENDA" : delivery === "Retirada" ? "RETIRADA" : "ENTREGA",
+          address_text: addressLine,
+          region: city === "Araraquara" ? "Encomenda" : region,
+          urgent,
+          payment_method: payment === "Cartão" ? "CARTAO" : payment,
+          entry_pct: needsEntry ? 0.5 : 1,
+          total_cents: Math.round(cartTotal * 100),
+          entry_cents: Math.round(amountToPay * 100),
+          balance_cents: Math.round((cartTotal - amountToPay) * 100),
+        };
+
+        const { data: order, error: orderErr } = await supabase
+          .from("orders")
+          .insert(orderData)
+          .select()
+          .single();
+
+        if (orderErr) throw orderErr;
+
+        accessCode = order.access_code;
+
+        const items = cartItems.map(({p, q}: any) => ({
+          order_id: order.id,
+          product_id: p.id,
+          product_name: p.name,
+          qty: q,
+          unit_price_cents: p.price_cents
+        }));
+
+        const { error: itemsErr } = await supabase.from("order_items").insert(items);
+        if (itemsErr) throw itemsErr;
+      }
+
+      setOrderDetails({
+        id: orderNumber,
+        accessCode,
+        payment,
+        delivery,
+        city,
+        region,
+        urgent,
+        customer: name || "Visitante",
+        phone,
+        payFull,
+        confirmed: false,
+        proof: null,
+        total: cartTotal
+      });
+      setOrderSent(true);
+      toast.success("Pedido enviado no WhatsApp (simulado)", {description: whatsMsg});
+      go("order");
+    } catch (err: any) {
+      console.error("Erro ao criar pedido:", err);
+      toast.error("Erro ao salvar pedido: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -802,22 +998,46 @@ Obs: —`;
               {["PIX", "Cartão", "Dinheiro"].map(p => (
                 <button
                   className={payment === p ? "chosen" : ""}
-                  onClick={() => setPayment(p)}
+                  onClick={() => {setPayment(p); setPayFull(false);}}
                   key={p}
                 >
                   {p === "PIX" ? <WalletCards/> : p === "Cartão" ? <CreditCard/> : <DollarSign/>}
                   <b>{p}</b>
-                  <span>{p === "Dinheiro" ? "a combinar" : "entrada de 50%"}</span>
+                  <span>{p === "Dinheiro" ? "a combinar" : "escolha abaixo"}</span>
                 </button>
               ))}
             </div>
+
+            {payment !== "Dinheiro" && (
+              <div className="choice-row" style={{marginTop: 20}}>
+                <button
+                  className={!payFull ? "chosen" : ""}
+                  onClick={() => setPayFull(false)}
+                >
+                  <b>Entrada 50%</b>
+                  <span>{money(entry)} agora, {money(entry)} na entrega</span>
+                </button>
+                <button
+                  className={payFull ? "chosen" : ""}
+                  onClick={() => setPayFull(true)}
+                >
+                  <b>Pagar integral</b>
+                  <span>{money(cartTotal)} agora</span>
+                </button>
+              </div>
+            )}
+
             <div className="summary">
               <span>Total do pedido</span>
               <b>{money(cartTotal)}</b>
-              <span>Entrada</span>
-              <b>{needsEntry ? money(entry) : "—"}</b>
-              <span>Saldo restante</span>
-              <b>{needsEntry ? money(entry) : "Pagamento na entrega/retirada"}</b>
+              <span>A pagar agora</span>
+              <b>{payment === "Dinheiro" ? "—" : money(amountToPay)}</b>
+              {needsEntry && (
+                <>
+                  <span>Saldo na entrega</span>
+                  <b>{money(entry)}</b>
+                </>
+              )}
             </div>
 
             {payment === "PIX" && (
@@ -857,7 +1077,7 @@ Obs: —`;
 
             {payment === "Cartão" && (
               <div className="pix-box">
-                <span>cartão · entrada de 50%</span>
+                <span>cartão · {payFull ? "integral" : "entrada 50%"}</span>
                 <small>Os dados do cartão serão combinados com Valdir após a confirmação do pedido.</small>
               </div>
             )}
@@ -880,7 +1100,12 @@ Obs: —`;
               <span>Endereço</span>
               <b>{addressLine}</b>
               <span>Pagamento</span>
-              <b>{payment}{needsEntry ? " · entrada 50%" : " · total na entrega/retirada"}</b>
+              <b>
+                {payment} · {payment === "Dinheiro"
+                  ? "total na entrega/retirada"
+                  : payFull ? "integral" : "entrada 50%"
+                }
+              </b>
               {urgent && (
                 <>
                   <span>Prioridade</span>
@@ -890,17 +1115,17 @@ Obs: —`;
             </div>
             <div className="summary">
               {cartItems.map(({p, q}: any) => (
-                <span key={p[0]}>
-                  {q}x {p[1]} — {money(Number(p[3].replace(",", ".")) * q)}
+                <span key={p.id}>
+                  {q}x {p.name} — {money(p.price_cents * q / 100)}
                 </span>
               ))}
               <hr/>
               <strong>Total</strong>
               <strong className="total">{money(cartTotal)}</strong>
-              {needsEntry && (
+              {payment !== "Dinheiro" && (
                 <>
-                  <strong>Entrada</strong>
-                  <strong className="total">{money(entry)}</strong>
+                  <strong>A pagar agora</strong>
+                  <strong className="total">{money(amountToPay)}</strong>
                 </>
               )}
             </div>
@@ -910,25 +1135,8 @@ Obs: —`;
                 {whatsMsg}
               </pre>
             </div>
-            <Button onClick={() => {
-              setOrderDetails({
-                id: orderNumber,
-                payment,
-                delivery,
-                city,
-                region,
-                urgent,
-                customer: name || "Visitante",
-                phone,
-                confirmed: false,
-                proof: null,
-                total: cartTotal
-              });
-              setOrderSent(true);
-              toast.success("Pedido enviado no WhatsApp (simulado)", {description: whatsMsg});
-              go("order");
-            }}>
-              Enviar pedido no WhatsApp <ArrowRight size={17}/>
+            <Button onClick={submitOrder} disabled={submitting}>
+              {submitting ? "Enviando..." : "Enviar pedido no WhatsApp"} <ArrowRight size={17}/>
             </Button>
           </>
         )}
@@ -942,7 +1150,8 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
   const [sent, setSent] = useState(Boolean(orderDetails.proof));
   const total = orderDetails.total || 80;
   const entry = total / 2;
-  const proofNeeded = orderDetails.payment !== "Dinheiro" && !orderDetails.confirmed;
+  const needsEntry = orderDetails.payment !== "Dinheiro" && !orderDetails.payFull;
+  const proofNeeded = needsEntry && !orderDetails.confirmed;
   const idx = orderDetails.confirmed ? 3 : orderDetails.payment === "Dinheiro" ? 1 : 2;
 
   const handleFile = (file?: File) => {
@@ -957,7 +1166,7 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
     setOrderDetails((current: any) => ({...current, proof: proofPreview}));
     setSent(true);
     toast.success("Comprovante enviado pelo WhatsApp", {
-      description: `📎 Comprovante de pagamento — Pedido ${orderDetails.id} · Cliente: ${orderDetails.customer} · Entrada: ${money(entry)} · Forma: ${orderDetails.payment} · imagem anexada`
+      description: `📎 Comprovante de pagamento — Pedido ${orderDetails.id} · Cliente: ${orderDetails.customer} · Valor: ${money(needsEntry ? entry : total)} · Forma: ${orderDetails.payment} · imagem anexada`
     });
   };
 
@@ -969,6 +1178,16 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
           <Check size={32}/>
         </div>
         <span className="eyebrow">Pedido {orderDetails.id}</span>
+        {orderDetails.accessCode && (
+          <div style={{background: "#e2f0e7", padding: "12px", borderRadius: "10px", margin: "10px 0", textAlign: "center"}}>
+            <strong style={{color: "#235842", fontSize: "14px"}}>
+              Código de acesso: <span style={{fontSize: "18px"}}>{orderDetails.accessCode}</span>
+            </strong>
+            <p style={{margin: "5px 0 0", fontSize: "11px", color: "#66564e"}}>
+              Use este código para acompanhar seu pedido
+            </p>
+          </div>
+        )}
         <h1>{sent ? "Comprovante enviado." : "Pedido recebido com carinho."}</h1>
         <p>
           {sent
@@ -989,15 +1208,14 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
           <div className="status-summary">
             <span>Total</span>
             <strong>{money(total)}</strong>
-            <span>Entrada</span>
-            <strong>{orderDetails.payment === "Dinheiro" ? "—" : money(entry)}</strong>
-            <span>Saldo</span>
-            <strong>
-              {orderDetails.payment === "Dinheiro"
-                ? "Pagamento na entrega/retirada"
-                : money(entry)
-              }
-            </strong>
+            <span>{orderDetails.payFull && orderDetails.payment !== "Dinheiro" ? "PAGO" : needsEntry ? "Entrada" : "A pagar"}</span>
+            <strong>{orderDetails.payment === "Dinheiro" ? "—" : money(needsEntry ? entry : total)}</strong>
+            {needsEntry && (
+              <>
+                <span>Saldo</span>
+                <strong>{money(entry)}</strong>
+              </>
+            )}
           </div>
           <div className="status-line">
             {STATUS_SEQ.map((s, i) => (
@@ -1010,6 +1228,8 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
               ? "Valdir já confirmou a entrada. O pedido pode seguir para separação."
               : orderDetails.payment === "Dinheiro"
               ? `Pagamento: dinheiro na ${orderDetails.delivery.toLowerCase() === "retirada" ? "retirada" : "entrega"}.`
+              : orderDetails.payFull
+              ? "Pagamento integral ainda aguarda confirmação."
               : "A entrada de 50% ainda aguarda confirmação."
             }
           </small>
@@ -1018,7 +1238,7 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
         {proofNeeded && !sent && (
           <div className="proof-card">
             <div>
-              <span className="eyebrow">entrada de 50% · {orderDetails.payment}</span>
+              <span className="eyebrow">{orderDetails.payFull ? "pagamento integral" : "entrada de 50%"} · {orderDetails.payment}</span>
               <h2>Envie o comprovante</h2>
               <p>Escolha uma foto da câmera ou da galeria. Você verá a imagem antes de enviar para Valdir.</p>
             </div>
@@ -1093,9 +1313,9 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
   );
 }
 
-function Account({go, clientAuth, clientScreen, setCart, notify}: any) {
+function Account({go, clientAuth, clientScreen, setCart, notify, products}: any) {
   const repeat = (o: any) => {
-    const c: Cart = {};
+    const c: Record<string, number> = {};
     o.items.forEach((it: any) => {
       c[it.id] = it.qty;
     });
@@ -1131,11 +1351,14 @@ function Account({go, clientAuth, clientScreen, setCart, notify}: any) {
             <span className="status-pill green">{sel.status}</span>
           </div>
           <div className="summary">
-            {sel.items.map((it: any) => (
-              <span key={it.id}>
-                {it.qty}x {products.find(p => p[0] === it.id)?.[1]} — {money(it.qty * it.price)}
-              </span>
-            ))}
+            {sel.items.map((it: any) => {
+              const prod = products.find((p: any) => p.id === it.id);
+              return (
+                <span key={it.id}>
+                  {it.qty}x {prod?.name || it.id} — {money(it.qty * it.price)}
+                </span>
+              );
+            })}
             <hr/>
             <strong>Total</strong>
             <strong className="total">{money(historyTotal(sel))}</strong>
@@ -1161,9 +1384,10 @@ function Account({go, clientAuth, clientScreen, setCart, notify}: any) {
                 <span className="eyebrow">{o.date} · {o.id}</span>
                 <b>{money(historyTotal(o))}</b>
                 <span>
-                  {o.items.map((it: any) =>
-                    `${it.qty}x ${products.find(p => p[0] === it.id)?.[1]}`
-                  ).join(", ")}
+                  {o.items.map((it: any) => {
+                    const prod = products.find((p: any) => p.id === it.id);
+                    return `${it.qty}x ${prod?.name || it.id}`;
+                  }).join(", ")}
                 </span>
               </div>
               <span className="status-pill green">{o.status}</span>
@@ -1203,9 +1427,10 @@ function Account({go, clientAuth, clientScreen, setCart, notify}: any) {
               <span className="eyebrow">{o.date} · {o.id}</span>
               <b>{money(historyTotal(o))}</b>
               <span>
-                {o.items.map((it: any) =>
-                  `${it.qty}x ${products.find(p => p[0] === it.id)?.[1]}`
-                ).join(", ")}
+                {o.items.map((it: any) => {
+                  const prod = products.find((p: any) => p.id === it.id);
+                  return `${it.qty}x ${prod?.name || it.id}`;
+                }).join(", ")}
               </span>
             </div>
             <span className="status-pill green">{o.status}</span>
@@ -1238,6 +1463,36 @@ function ProtectedEntry({kind, onUnlock, onBack}: {
   onBack: () => void;
 }) {
   const manager = kind === "manager";
+  const [email, setEmail] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      if (!hasSupabase) {
+        onUnlock();
+        return;
+      }
+      const data = await signIn(email.trim(), pwd);
+      const role = await getRole(data.user?.id);
+      const ok = manager
+        ? role === "manager"
+        : (role === "operator" || role === "manager");
+      if (!ok) {
+        await signOut();
+        setErr("Este usuário não tem acesso a esta área.");
+        return;
+      }
+      onUnlock();
+    } catch (e: any) {
+      setErr("Não foi possível entrar. Verifique e-mail e senha.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className={`app-shell protected-entry ${manager ? "manager-entry" : "operator-entry"}`}>
@@ -1255,30 +1510,49 @@ function ProtectedEntry({kind, onUnlock, onBack}: {
           }
         </p>
         <label>
-          Usuário
-          <input defaultValue={manager ? "gestor@produtosdovaldir.demo" : "valdir@produtosdovaldir.demo"}/>
+          E-mail
+          <input
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="seu@email.com"
+            autoComplete="username"
+          />
         </label>
         <label>
           Senha
-          <input type="password" defaultValue="demo123"/>
+          <input
+            type="password"
+            value={pwd}
+            onChange={e => setPwd(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="current-password"
+          />
         </label>
-        <Button onClick={onUnlock}>
-          Entrar no painel <ArrowRight size={17}/>
+        {err && (
+          <p style={{color: "#bd463b", fontSize: 12, margin: "8px 0"}}>{err}</p>
+        )}
+        <Button onClick={submit} disabled={busy}>
+          {busy ? "Entrando..." : "Entrar no painel"} <ArrowRight size={17}/>
         </Button>
         <button className="link-btn protected-back" onClick={onBack}>
           <ArrowLeft size={16}/>
           voltar ao catálogo
         </button>
-        <small className="demo-note">Autenticação simulada nesta etapa do protótipo.</small>
+        <small className="demo-note">
+          {hasSupabase
+            ? "Acesso protegido com Supabase Auth."
+            : "Autenticação simulada nesta etapa do protótipo."}
+        </small>
       </main>
     </div>
   );
 }
 
-function OperatorApp({screen, setScreen, onExit}: {
+function OperatorApp({screen, setScreen, onExit, onSignOut}: {
   screen: string;
   setScreen: (s: string) => void;
   onExit: () => void;
+  onSignOut: () => void;
 }) {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [routeStage, setRouteStage] = useState<"before" | "ask" | "pending" | "done">("before");
@@ -1570,17 +1844,21 @@ function OperatorApp({screen, setScreen, onExit}: {
             <span>Chame o gestor para ajudar.</span>
           </div>
         </div>
-        <button className="exit-role" onClick={onExit}>Trocar experiência</button>
+        {!hasSupabase && (
+          <button className="exit-role" onClick={onExit}>Trocar experiência</button>
+        )}
+        <button className="exit-role" onClick={onSignOut}>Sair da conta</button>
       </main>
       <BottomNav items={opNav} active="home" onSelect={setScreen}/>
     </div>
   );
 }
 
-function ManagerApp({tab, setTab, onExit}: {
+function ManagerApp({tab, setTab, onExit, onSignOut}: {
   tab: string;
   setTab: (s: string) => void;
   onExit: () => void;
+  onSignOut: () => void;
 }) {
   const items = [
     {id: "dashboard", label: "Visão geral", icon: <LayoutDashboard/>},
@@ -1658,10 +1936,10 @@ function ManagerApp({tab, setTab, onExit}: {
           <ManagerList
             title="Produtos"
             subtitle="16 itens no catálogo"
-            rows={products.slice(0, 7).map(p => ({
-              name: p[1],
-              meta: `${p[6]} em estoque · ${p[2]}`,
-              value: money(Number(p[3].replace(",", ".")))
+            rows={MOCK_PRODUCTS.slice(0, 7).map(p => ({
+              name: p.name,
+              meta: `${p.stock} em estoque · ${MOCK_CATEGORIES.find(c => c.id === p.category_id)?.name}`,
+              value: moneyFromCents(p.price_cents)
             }))}
             action="Novo produto"
           />
@@ -1671,11 +1949,11 @@ function ManagerApp({tab, setTab, onExit}: {
           <ManagerList
             title="Estoque"
             subtitle="Acompanhe o que precisa de atenção"
-            rows={products.slice(0, 6).map(p => ({
-              name: p[1],
+            rows={MOCK_PRODUCTS.slice(0, 6).map(p => ({
+              name: p.name,
               meta: `mínimo 10 unidades`,
-              value: `${p[6]} un.`,
-              alert: p[6] < 10
+              value: `${p.stock} un.`,
+              alert: p.stock < 10
             }))}
             action="Ajustar estoque"
           />
@@ -1752,7 +2030,7 @@ function ManagerApp({tab, setTab, onExit}: {
             <span>{i.label}</span>
           </button>
         ))}
-        <button onClick={onExit}>
+        <button onClick={onSignOut}>
           <X/>
           <span>Sair</span>
         </button>
