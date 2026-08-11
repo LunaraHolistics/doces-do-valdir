@@ -1,4 +1,4 @@
-/* Produtos do Valdir — Supabase real: catálogo, pedidos, operação e gestão com CRUD. */
+/* Produtos do Valdir — Supabase real: catálogo, pedidos, operação, gestão, fotos e WhatsApp. */
 import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
@@ -129,6 +129,27 @@ const payLabel = (o: any) => {
   if (o.payment_method === "DINHEIRO") return "Dinheiro";
   return o.payment_confirmed ? `${m} · pago/confirmado` : `${m} · aguardando`;
 };
+
+// ---------- Storage + WhatsApp ----------
+async function uploadToBucket(bucket: string, path: string, file: File) {
+  const { error } = await supabase.storage.from(bucket).upload(path, file, {upsert: true});
+  if (error) throw error;
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function waLink(number: string, text: string) {
+  const digits = (number || "").replace(/\D/g, "");
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
+
+function openWhatsApp(number: string | undefined, text: string) {
+  if (number && number.replace(/\D/g, "").length >= 10) {
+    window.open(waLink(number, text), "_blank");
+    return true;
+  }
+  return false;
+}
 
 function useOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -290,17 +311,43 @@ function BottomNav({items, active, onSelect}: {
   );
 }
 
-function WhatsApp({text = "Olá, Valdir! Estou vendo o catálogo da loja e gostaria de tirar uma dúvida."}: {
-  text?: string;
-}) {
+function WhatsApp({text, number}: {text?: string; number?: string}) {
+  const msg = text || "Olá, Valdir! Estou vendo o catálogo da loja e gostaria de tirar uma dúvida.";
   return (
     <Button
       variant="whatsapp"
-      onClick={() => toast.success("WhatsApp simulado", {description: text})}
+      onClick={() => {
+        if (!openWhatsApp(number, msg)) {
+          toast.success("WhatsApp simulado", {description: msg});
+        }
+      }}
     >
       <HeartHandshake size={18}/>
       Falar com Valdir
     </Button>
+  );
+}
+
+function PhotoPicker({onPick}: {onPick: (file: File, preview: string) => void}) {
+  const handle = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onPick(file, String(reader.result));
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="proof-pickers">
+      <label>
+        <Camera size={18}/>
+        Tirar foto
+        <input type="file" accept="image/*" capture="environment" onChange={e => handle(e.target.files?.[0])}/>
+      </label>
+      <label>
+        <ImageIcon size={18}/>
+        Escolher da galeria
+        <input type="file" accept="image/*" onChange={e => handle(e.target.files?.[0])}/>
+      </label>
+    </div>
   );
 }
 
@@ -569,6 +616,8 @@ function ClientApp(props: any) {
     clientAuth, setClientAuth, notify
   } = props;
 
+  const whatsNumber = settings?.whatsapp_number;
+
   const cats = ["Todos", ...categories.map((c: any) => c.name)];
   const filtered = products.filter((p: any) => {
     const catName = categories.find((c: any) => c.id === p.category_id)?.name || "Outros";
@@ -621,15 +670,10 @@ function ClientApp(props: any) {
             <Button onClick={() => {add(selected.id); notify("Produto adicionado ao carrinho");}}>
               Adicionar ao carrinho <ArrowRight size={17}/>
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => toast.success("WhatsApp simulado", {
-                description: `Olá, Valdir! Tenho uma dúvida sobre ${selected.name}.`
-              })}
-            >
-              <HeartHandshake size={17}/>
-              Tenho uma dúvida sobre este produto
-            </Button>
+            <WhatsApp
+              number={whatsNumber}
+              text={`Olá, Valdir! Tenho uma dúvida sobre ${selected.name}.`}
+            />
           </div>
         </main>
       </div>
@@ -687,7 +731,7 @@ function ClientApp(props: any) {
               <Button onClick={() => go("checkout")}>
                 Avançar para o pedido <ArrowRight size={18}/>
               </Button>
-              <WhatsApp/>
+              <WhatsApp number={whatsNumber}/>
             </>
           )}
           <button className="link-btn" onClick={() => go("home")}>
@@ -741,7 +785,7 @@ function ClientApp(props: any) {
           />
         </div>
         <div className="catalog-actions">
-          <WhatsApp/>
+          <WhatsApp number={whatsNumber}/>
           <button
             className="install"
             onClick={() => notify("No celular, use 'Adicionar à tela inicial'")}
@@ -820,6 +864,7 @@ function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrder
   const pixKey = settings?.pix_key || "valdirjamado@gmail.com";
   const pixHolder = settings?.pix_holder || "Valdir J. Amado";
   const pickupEnabled = !settings || settings.pickup_enabled !== false;
+  const whatsNumber = settings?.whatsapp_number;
   const pct = payment === "PIX"
     ? Number(settings?.entry_pct_pix ?? 0.5)
     : Number(settings?.entry_pct_card ?? 0.5);
@@ -915,7 +960,10 @@ Obs: —`;
         total: cartTotal
       });
       setOrderSent(true);
-      toast.success("Pedido enviado no WhatsApp (simulado)", {description: whatsMsg});
+
+      if (!openWhatsApp(whatsNumber, whatsMsg)) {
+        toast.success("Pedido enviado no WhatsApp (simulado)", {description: whatsMsg});
+      }
       go("order");
     } catch (err: any) {
       console.error("Erro ao criar pedido:", err);
@@ -1235,29 +1283,46 @@ Obs: —`;
   );
 }
 
-function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
+function OrderStatus({go, orderDetails, setOrderDetails, clientAuth, settings}: any) {
   const [proofPreview, setProofPreview] = useState<string | null>(orderDetails.proof);
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [sent, setSent] = useState(Boolean(orderDetails.proof));
+  const [sending, setSending] = useState(false);
   const total = orderDetails.total || 80;
   const entry = total / 2;
   const needsEntry = orderDetails.payment !== "Dinheiro" && !orderDetails.payFull;
   const proofNeeded = needsEntry && !orderDetails.confirmed;
   const idx = orderDetails.confirmed ? 3 : orderDetails.payment === "Dinheiro" ? 1 : 2;
+  const whatsNumber = settings?.whatsapp_number;
 
   const handleFile = (file?: File) => {
     if (!file) return;
+    setProofFile(file);
     const reader = new FileReader();
     reader.onload = () => setProofPreview(String(reader.result));
     reader.readAsDataURL(file);
   };
 
-  const sendProof = () => {
+  const sendProof = async () => {
     if (!proofPreview) return;
-    setOrderDetails((current: any) => ({...current, proof: proofPreview}));
+    setSending(true);
+    let url = proofPreview;
+    try {
+      if (hasSupabase && orderDetails.accessCode && proofFile) {
+        const path = `${orderDetails.accessCode}-${Date.now()}.jpg`;
+        url = await uploadToBucket("proofs", path, proofFile);
+        await supabase.rpc("attach_proof", {code: orderDetails.accessCode, proof_url: url});
+      }
+    } catch (e) {
+      console.error("Falha no upload do comprovante:", e);
+    }
+    setOrderDetails((current: any) => ({...current, proof: url}));
     setSent(true);
-    toast.success("Comprovante enviado pelo WhatsApp", {
-      description: `📎 Comprovante de pagamento — Pedido ${orderDetails.id} · Cliente: ${orderDetails.customer} · Valor: ${money(needsEntry ? entry : total)} · Forma: ${orderDetails.payment} · imagem anexada`
-    });
+    setSending(false);
+    const msg = `📎 Comprovante de pagamento — Pedido ${orderDetails.id} · Cliente: ${orderDetails.customer} · Entrada: ${money(needsEntry ? entry : total)} · Forma: ${orderDetails.payment}`;
+    if (!openWhatsApp(whatsNumber, msg)) {
+      toast.success("Comprovante enviado pelo WhatsApp", {description: msg + " · imagem anexada"});
+    }
   };
 
   return (
@@ -1359,9 +1424,9 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
               <div className="proof-preview">
                 <img src={proofPreview}/>
                 <span>Pré-visualização do comprovante</span>
-                <Button variant="whatsapp" onClick={sendProof}>
+                <Button variant="whatsapp" onClick={sendProof} disabled={sending}>
                   <HeartHandshake size={17}/>
-                  Enviar comprovante pelo WhatsApp
+                  {sending ? "Enviando..." : "Enviar comprovante pelo WhatsApp"}
                 </Button>
               </div>
             )}
@@ -1378,9 +1443,12 @@ function OrderStatus({go, orderDetails, setOrderDetails, clientAuth}: any) {
 
         <Button
           variant="whatsapp"
-          onClick={() => toast.success("WhatsApp simulado aberto", {
-            description: `Pedido ${orderDetails.id} · ${orderDetails.customer}`
-          })}
+          onClick={() => {
+            const msg = `Pedido ${orderDetails.id} · ${orderDetails.customer}`;
+            if (!openWhatsApp(whatsNumber, msg)) {
+              toast.success("WhatsApp simulado aberto", {description: msg});
+            }
+          }}
         >
           <HeartHandshake size={17}/>
           Falar com Valdir
@@ -1652,6 +1720,8 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [doneSummary, setDoneSummary] = useState("");
   const [editP, setEditP] = useState<any | null>(null);
+  const [editPhoto, setEditPhoto] = useState<{file: File; preview: string} | null>(null);
+  const [npPhoto, setNpPhoto] = useState<{file: File; preview: string} | null>(null);
   const [np, setNp] = useState<any>({
     name: "", description: "", price: "", cost: "", stock: "0",
     category_id: 1, image_url: IMG.doces
@@ -1676,11 +1746,23 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
     setSelectedOrder(s => (s && s.id === o.id ? {...s, ...changes} : s));
   };
 
+  const uploadPhoto = async (photo: {file: File; preview: string} | null, prefix: string) => {
+    if (!photo) return null;
+    try {
+      return await uploadToBucket("product-photos", `${prefix}-${Date.now()}.jpg`, photo.file);
+    } catch (e) {
+      console.error("Falha no upload da foto:", e);
+      toast.error("Não consegui enviar a foto; usando imagem padrão.");
+      return null;
+    }
+  };
+
   const saveNewProduct = async () => {
     if (!np.name) {
       toast.error("Dê um nome para o produto.");
       return;
     }
+    const uploaded = await uploadPhoto(npPhoto, "prod");
     await insertProd({
       name: np.name,
       description: np.description || "",
@@ -1688,15 +1770,17 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
       cost_cents: Math.round(parseFloat(np.cost || "0") * 100),
       stock: parseInt(np.stock || "0", 10),
       category_id: Number(np.category_id),
-      image_url: np.image_url,
+      image_url: uploaded || np.image_url,
       active: true
     });
     toast.success("Produto cadastrado na loja!");
     setNp({name: "", description: "", price: "", cost: "", stock: "0", category_id: 1, image_url: IMG.doces});
+    setNpPhoto(null);
     setScreen("products");
   };
 
   const saveEditProduct = async () => {
+    const uploaded = await uploadPhoto(editPhoto, `prod-${editP.id}`);
     await patchProd(editP.id, {
       name: editP.name,
       description: editP.description || "",
@@ -1704,10 +1788,11 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
       cost_cents: Math.round(parseFloat(editP.cost || "0") * 100),
       stock: parseInt(editP.stock || "0", 10),
       category_id: Number(editP.category_id),
-      image_url: editP.image_url
+      image_url: uploaded || editP.image_url
     });
     toast.success("Produto atualizado!");
     setEditP(null);
+    setEditPhoto(null);
   };
 
   if (screen === "product") {
@@ -1717,11 +1802,24 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
         <main className="page">
           <span className="eyebrow">cadastro rápido</span>
           <h1>Vamos colocar um produto na loja?</h1>
-          <div className="photo-capture">
-            <Plus size={30}/>
-            <b>Tirar foto</b>
-            <span>ou escolher da galeria (em breve)</span>
-          </div>
+          {npPhoto ? (
+            <div className="crop-preview">
+              <img src={npPhoto.preview}/>
+              <span>enquadramento automático (corte central)</span>
+            </div>
+          ) : (
+            <div className="photo-capture">
+              <Plus size={30}/>
+              <b>Tirar foto</b>
+              <span>ou escolher da galeria</span>
+            </div>
+          )}
+          <PhotoPicker onPick={(f, p) => setNpPhoto({file: f, preview: p})}/>
+          {npPhoto && (
+            <button className="link-btn" style={{margin: "8px 0"}} onClick={() => setNpPhoto(null)}>
+              remover foto
+            </button>
+          )}
           <label>
             Nome do produto
             <input value={np.name} onChange={e => setNp({...np, name: e.target.value})} placeholder="Ex.: Doce de leite"/>
@@ -1752,15 +1850,17 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
               </select>
             </label>
           </div>
-          <label>
-            Imagem da prateleira
-            <select value={np.image_url} onChange={e => setNp({...np, image_url: e.target.value})}>
-              <option value={IMG.doces}>Doces</option>
-              <option value={IMG.balas}>Balas</option>
-              <option value={IMG.lanches}>Lanches</option>
-              <option value={IMG.utilidades}>Utilidades</option>
-            </select>
-          </label>
+          {!npPhoto && (
+            <label>
+              Imagem da prateleira
+              <select value={np.image_url} onChange={e => setNp({...np, image_url: e.target.value})}>
+                <option value={IMG.doces}>Doces</option>
+                <option value={IMG.balas}>Balas</option>
+                <option value={IMG.lanches}>Lanches</option>
+                <option value={IMG.utilidades}>Utilidades</option>
+              </select>
+            </label>
+          )}
           <Button onClick={saveNewProduct}>
             Salvar produto <Check size={17}/>
           </Button>
@@ -1788,12 +1888,15 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
                   className="icon-btn"
                   style={{width: 32, height: 32}}
                   title="Corrigir informações"
-                  onClick={() => setEditP({
-                    ...p,
-                    price: (p.price_cents / 100).toFixed(2),
-                    cost: (p.cost_cents / 100).toFixed(2),
-                    stock: String(p.stock)
-                  })}
+                  onClick={() => {
+                    setEditP({
+                      ...p,
+                      price: (p.price_cents / 100).toFixed(2),
+                      cost: (p.cost_cents / 100).toFixed(2),
+                      stock: String(p.stock)
+                    });
+                    setEditPhoto(null);
+                  }}
                 >
                   <Pencil size={14}/>
                 </button>
@@ -1804,6 +1907,11 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
           {editP && (
             <div className="settings-card" style={{marginTop: 14}}>
               <span className="eyebrow">corrigir produto</span>
+              <div className="crop-preview">
+                <img src={editPhoto?.preview || editP.image_url}/>
+                <span>foto atual / nova foto</span>
+              </div>
+              <PhotoPicker onPick={(f, p) => setEditPhoto({file: f, preview: p})}/>
               <label>Nome<input value={editP.name} onChange={e => setEditP({...editP, name: e.target.value})}/></label>
               <label>Descrição<input value={editP.description} onChange={e => setEditP({...editP, description: e.target.value})}/></label>
               <div className="two-cols">
@@ -1819,17 +1927,8 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
                   </select>
                 </label>
               </div>
-              <label>
-                Imagem
-                <select value={editP.image_url} onChange={e => setEditP({...editP, image_url: e.target.value})}>
-                  <option value={IMG.doces}>Doces</option>
-                  <option value={IMG.balas}>Balas</option>
-                  <option value={IMG.lanches}>Lanches</option>
-                  <option value={IMG.utilidades}>Utilidades</option>
-                </select>
-              </label>
               <Button onClick={saveEditProduct}>Salvar <Check size={16}/></Button>
-              <Button variant="ghost" onClick={() => setEditP(null)}>Cancelar</Button>
+              <Button variant="ghost" onClick={() => {setEditP(null); setEditPhoto(null);}}>Cancelar</Button>
             </div>
           )}
 
@@ -2102,6 +2201,7 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
   const {prods, patchProd, insertProd} = useProducts();
   const {settings, saveSettings} = useSettings();
   const [edit, setEdit] = useState<any | null>(null);
+  const [editPhoto, setEditPhoto] = useState<{file: File; preview: string} | null>(null);
   const [form, setForm] = useState<any>(null);
 
   useEffect(() => {
@@ -2128,14 +2228,26 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
   const pendCount = orders.filter(o => o.status === "PENDENTE DE ENTREGA").length;
   const lowStock = prods.filter(p => p.stock < 10).length;
 
+  const uploadPhoto = async (photo: {file: File; preview: string} | null, prefix: string) => {
+    if (!photo) return null;
+    try {
+      return await uploadToBucket("product-photos", `${prefix}-${Date.now()}.jpg`, photo.file);
+    } catch (e) {
+      console.error("Falha no upload da foto:", e);
+      toast.error("Não consegui enviar a foto; mantendo imagem atual.");
+      return null;
+    }
+  };
+
   const saveEdit = async () => {
+    const uploaded = edit.isNew ? await uploadPhoto(editPhoto, "prod") : await uploadPhoto(editPhoto, `prod-${edit.id}`);
     const payload = {
       name: edit.name,
       description: edit.description || "",
       price_cents: Math.round(parseFloat(edit.price || "0") * 100),
       cost_cents: Math.round(parseFloat(edit.cost || "0") * 100),
       stock: parseInt(edit.stock || "0", 10),
-      image_url: edit.image_url,
+      image_url: uploaded || edit.image_url,
       category_id: parseInt(edit.category_id || "1", 10),
       active: edit.active !== false
     };
@@ -2147,6 +2259,7 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
       toast.success("Produto atualizado");
     }
     setEdit(null);
+    setEditPhoto(null);
   };
 
   return (
@@ -2191,17 +2304,20 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
                 <h1>Produtos</h1>
                 <p>{prods.filter(p => p.active !== false).length} ativos no catálogo</p>
               </div>
-              <Button onClick={() => setEdit({
-                isNew: true,
-                name: "",
-                description: "",
-                price: "",
-                cost: "",
-                stock: "0",
-                image_url: IMG.doces,
-                category_id: 1,
-                active: true
-              })}>
+              <Button onClick={() => {
+                setEdit({
+                  isNew: true,
+                  name: "",
+                  description: "",
+                  price: "",
+                  cost: "",
+                  stock: "0",
+                  image_url: IMG.doces,
+                  category_id: 1,
+                  active: true
+                });
+                setEditPhoto(null);
+              }}>
                 <Plus size={16}/>
                 Novo produto
               </Button>
@@ -2219,12 +2335,15 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
                     className="icon-btn"
                     style={{width: 32, height: 32}}
                     title="Editar"
-                    onClick={() => setEdit({
-                      ...p,
-                      price: (p.price_cents / 100).toFixed(2),
-                      cost: (p.cost_cents / 100).toFixed(2),
-                      stock: String(p.stock)
-                    })}
+                    onClick={() => {
+                      setEdit({
+                        ...p,
+                        price: (p.price_cents / 100).toFixed(2),
+                        cost: (p.cost_cents / 100).toFixed(2),
+                        stock: String(p.stock)
+                      });
+                      setEditPhoto(null);
+                    }}
                   >
                     <Pencil size={14}/>
                   </button>
@@ -2248,6 +2367,11 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
             {edit && (
               <div className="settings-card" style={{marginTop: 14}}>
                 <span className="eyebrow">{edit.isNew ? "novo produto" : "editar produto"}</span>
+                <div className="crop-preview">
+                  <img src={editPhoto?.preview || edit.image_url}/>
+                  <span>foto atual / nova foto</span>
+                </div>
+                <PhotoPicker onPick={(f, p) => setEditPhoto({file: f, preview: p})}/>
                 <label>Nome<input value={edit.name} onChange={e => setEdit({...edit, name: e.target.value})}/></label>
                 <label>Descrição<input value={edit.description} onChange={e => setEdit({...edit, description: e.target.value})}/></label>
                 <div className="two-cols">
@@ -2263,15 +2387,6 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
                     </select>
                   </label>
                 </div>
-                <label>
-                  Imagem
-                  <select value={edit.image_url} onChange={e => setEdit({...edit, image_url: e.target.value})}>
-                    <option value={IMG.doces}>Doces</option>
-                    <option value={IMG.balas}>Balas</option>
-                    <option value={IMG.lanches}>Lanches</option>
-                    <option value={IMG.utilidades}>Utilidades</option>
-                  </select>
-                </label>
                 <label style={{display: "flex", alignItems: "center", gap: 8}}>
                   <input
                     type="checkbox"
@@ -2282,7 +2397,7 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
                   Ativo no catálogo
                 </label>
                 <Button onClick={saveEdit}>Salvar <Check size={16}/></Button>
-                <Button variant="ghost" onClick={() => setEdit(null)}>Cancelar</Button>
+                <Button variant="ghost" onClick={() => {setEdit(null); setEditPhoto(null);}}>Cancelar</Button>
               </div>
             )}
           </>
@@ -2401,7 +2516,7 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
             <h1>Configurações</h1>
             <label>Chave PIX<input value={form.pix_key || ""} onChange={e => setForm({...form, pix_key: e.target.value})}/></label>
             <label>Nome do titular<input value={form.pix_holder || ""} onChange={e => setForm({...form, pix_holder: e.target.value})}/></label>
-            <label>WhatsApp do Valdir<input value={form.whatsapp_number || ""} onChange={e => setForm({...form, whatsapp_number: e.target.value})}/></label>
+            <label>WhatsApp do Valdir (com DDD)<input value={form.whatsapp_number || ""} onChange={e => setForm({...form, whatsapp_number: e.target.value})} placeholder="16 99999-9999"/></label>
             <label>Endereço de retirada<input value={form.pickup_address || ""} onChange={e => setForm({...form, pickup_address: e.target.value})}/></label>
             <div className="two-cols">
               <label>Entrada PIX (0–1)<input type="number" step="0.05" min="0" max="1" value={form.entry_pct_pix ?? 0.5} onChange={e => setForm({...form, entry_pct_pix: parseFloat(e.target.value)})}/></label>
