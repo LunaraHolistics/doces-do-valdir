@@ -1,11 +1,8 @@
-# Rodada visual — contraste e identidade verde
+# Ajuste de UX — pagamento PIX e comprovante
 
-- [x] Atualizar tokens globais para tornar o verde acolhedor a cor principal.
-- [x] Garantir contraste forte em títulos, subtítulos, preços, textos secundários, cards e navegação.
-- [x] Garantir contraste seguro para textos sobre fotografias e fundos coloridos.
-- [x] Fazer botões principais usarem verde sólido com texto de alto contraste e toque confortável.
-- [x] Reforçar preço, disponibilidade, etiquetas e ação de adicionar nos cards de produtos.
-- [x] Remover completamente a expressão “mercadinho de bairro” do sistema.
-- [x] Preservar terracota, creme, amarelo e vermelho apenas como cores secundárias ou estados especiais.
-- [x] Validar catálogo, acesso protegido e áreas internas em viewport mobile.
+- [x] Exibir confirmação visual clara após copiar a chave PIX.
+- [x] Destacar o estado de chave copiada com texto e ícone de sucesso.
+- [x] Tornar o envio do comprovante pelo WhatsApp mais evidente.
+- [x] Manter o fluxo de pagamento simulado e a identidade visual atual.
+- [x] Validar a tela de pagamento em viewport mobile.
 - [ ] Salvar checkpoint final após validação.

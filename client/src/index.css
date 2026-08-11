@@ -37,3 +37,6 @@ label{color:#4b3a31}input,select{color:var(--ink);border-color:#d6c8bb}input::pl
 
 /* O acesso do gestor segue a mesma hierarquia: verde para ação principal, carvão apenas na moldura de navegação. */
 .manager-entry .btn-primary{background:var(--green);color:#fff}.manager-entry .btn-primary:hover{background:var(--green-dark)}
+
+/* UX de pagamento: confirmação inequívoca da chave copiada e ação de comprovante em primeiro plano. */
+.pix-box{gap:9px}.pix-box>b{letter-spacing:.01em;color:#2e241e}.pix-box button.copied{color:var(--green-dark);background:var(--green-soft);border-radius:9px;padding:8px 10px;width:max-content}.copy-success{display:flex;align-items:flex-start;gap:5px;color:var(--green-dark);font-size:12px;line-height:1.35}.copy-success svg{flex:0 0 auto;margin-top:1px}.pix-box .btn-whatsapp{margin-top:4px;min-height:48px}.pix-box small{color:#5f5148}
