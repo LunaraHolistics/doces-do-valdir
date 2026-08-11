@@ -116,7 +116,6 @@ const mockHistory = [
 const historyTotal = (o: any) =>
   o.items.reduce((s: number, it: any) => s + it.qty * it.price, 0);
 
-// ---------- helpers de pedido ----------
 const orderTotal = (o: any) => (o.total_cents != null ? o.total_cents / 100 : (o.total || 0));
 const orderEntry = (o: any) => (o.entry_cents != null ? o.entry_cents / 100 : orderTotal(o) / 2);
 const orderBalance = (o: any) => (o.balance_cents != null ? o.balance_cents / 100 : orderTotal(o) - orderEntry(o));
@@ -129,7 +128,6 @@ const payLabel = (o: any) => {
   return o.payment_confirmed ? `${m} · pago/confirmado` : `${m} · aguardando`;
 };
 
-// ---------- hooks de dados ----------
 function useOrders() {
   const [orders, setOrders] = useState<any[]>([]);
   useEffect(() => {
@@ -811,8 +809,8 @@ function Checkout({cartItems, cartTotal, checkoutStep, setCheckoutStep, setOrder
   const [region, setRegion] = useState("Zona Norte");
   const [submitting, setSubmitting] = useState(false);
 
-  const pixKey = settings?.pix_key || "doces.valdir@demo.com";
-  const pixHolder = settings?.pix_holder || "Valdir";
+  const pixKey = settings?.pix_key || "valdirjamado@gmail.com";
+  const pixHolder = settings?.pix_holder || "Valdir J. Amado";
   const pickupEnabled = !settings || settings.pickup_enabled !== false;
   const pct = payment === "PIX"
     ? Number(settings?.entry_pct_pix ?? 0.5)
@@ -1639,11 +1637,17 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
   onSignOut: () => void;
 }) {
   const {orders, patch} = useOrders();
+  const {prods, patchProd, insertProd} = useProducts();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [routeStage, setRouteStage] = useState<"before" | "ask" | "pending" | "done">("before");
   const [pend, setPend] = useState<Record<string, boolean>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [doneSummary, setDoneSummary] = useState("");
+  const [editP, setEditP] = useState<any | null>(null);
+  const [np, setNp] = useState<any>({
+    name: "", description: "", price: "", cost: "", stock: "0",
+    category_id: 1, image_url: IMG.doces
+  });
 
   const opNav = [
     {id: "home", label: "Início", icon: <HomeIcon size={19}/>},
@@ -1664,6 +1668,40 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
     setSelectedOrder(s => (s && s.id === o.id ? {...s, ...changes} : s));
   };
 
+  const saveNewProduct = async () => {
+    if (!np.name) {
+      toast.error("Dê um nome para o produto.");
+      return;
+    }
+    await insertProd({
+      name: np.name,
+      description: np.description || "",
+      price_cents: Math.round(parseFloat(np.price || "0") * 100),
+      cost_cents: Math.round(parseFloat(np.cost || "0") * 100),
+      stock: parseInt(np.stock || "0", 10),
+      category_id: Number(np.category_id),
+      image_url: np.image_url,
+      active: true
+    });
+    toast.success("Produto cadastrado na loja!");
+    setNp({name: "", description: "", price: "", cost: "", stock: "0", category_id: 1, image_url: IMG.doces});
+    setScreen("products");
+  };
+
+  const saveEditProduct = async () => {
+    await patchProd(editP.id, {
+      name: editP.name,
+      description: editP.description || "",
+      price_cents: Math.round(parseFloat(editP.price || "0") * 100),
+      cost_cents: Math.round(parseFloat(editP.cost || "0") * 100),
+      stock: parseInt(editP.stock || "0", 10),
+      category_id: Number(editP.category_id),
+      image_url: editP.image_url
+    });
+    toast.success("Produto atualizado!");
+    setEditP(null);
+  };
+
   if (screen === "product") {
     return (
       <div className="app-shell operator">
@@ -1674,37 +1712,124 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
           <div className="photo-capture">
             <Plus size={30}/>
             <b>Tirar foto</b>
-            <span>ou escolher da galeria</span>
-          </div>
-          <div className="crop-preview">
-            <img src={IMG.hero}/>
-            <span>enquadramento simulado</span>
+            <span>ou escolher da galeria (em breve)</span>
           </div>
           <label>
             Nome do produto
-            <input placeholder="Ex.: Doce de leite"/>
+            <input value={np.name} onChange={e => setNp({...np, name: e.target.value})} placeholder="Ex.: Doce de leite"/>
+          </label>
+          <label>
+            Descrição curta
+            <input value={np.description} onChange={e => setNp({...np, description: e.target.value})} placeholder="Ex.: Pote 400g"/>
           </label>
           <div className="two-cols">
             <label>
-              Preço de venda
-              <input placeholder="R$ 0,00"/>
+              Preço de venda (R$)
+              <input value={np.price} onChange={e => setNp({...np, price: e.target.value})} placeholder="0,00"/>
             </label>
             <label>
-              Valor de custo
-              <input placeholder="R$ 0,00"/>
+              Valor de custo (R$)
+              <input value={np.cost} onChange={e => setNp({...np, cost: e.target.value})} placeholder="0,00"/>
+            </label>
+          </div>
+          <div className="two-cols">
+            <label>
+              Quantidade
+              <input value={np.stock} onChange={e => setNp({...np, stock: e.target.value})} placeholder="0"/>
+            </label>
+            <label>
+              Categoria
+              <select value={np.category_id} onChange={e => setNp({...np, category_id: e.target.value})}>
+                {[1, 2, 3, 4].map(i => <option key={i} value={i}>{CATNAMES[i]}</option>)}
+              </select>
             </label>
           </div>
           <label>
-            Quantidade disponível
-            <input placeholder="0"/>
+            Imagem da prateleira
+            <select value={np.image_url} onChange={e => setNp({...np, image_url: e.target.value})}>
+              <option value={IMG.doces}>Doces</option>
+              <option value={IMG.balas}>Balas</option>
+              <option value={IMG.lanches}>Lanches</option>
+              <option value={IMG.utilidades}>Utilidades</option>
+            </select>
           </label>
-          <Button onClick={() => {
-            toast.success("Produto salvo no mock");
-            setScreen("home");
-          }}>
+          <Button onClick={saveNewProduct}>
             Salvar produto <Check size={17}/>
           </Button>
         </main>
+      </div>
+    );
+  }
+
+  if (screen === "products") {
+    return (
+      <div className="app-shell operator">
+        <Header title="Meus produtos" subtitle={`${prods.filter(p => p.active !== false).length} na loja`} back onBack={() => setScreen("home")} onLogo={() => setScreen("home")}/>
+        <main className="page">
+          <div className="manager-list">
+            {prods.filter(p => p.active !== false).map(p => (
+              <div className="manager-row" key={p.id}>
+                <div className="mini-avatar">{p.name[0]}</div>
+                <div>
+                  <b>{p.name}</b>
+                  <span>{moneyFromCents(p.price_cents)} · {p.stock} un.</span>
+                </div>
+                <button className="icon-btn" style={{width: 32, height: 32}} onClick={() => patchProd(p.id, {stock: Math.max(0, p.stock - 1)})}>−</button>
+                <button className="icon-btn" style={{width: 32, height: 32}} onClick={() => patchProd(p.id, {stock: p.stock + 1})}>+</button>
+                <button
+                  className="icon-btn"
+                  style={{width: 32, height: 32}}
+                  title="Corrigir informações"
+                  onClick={() => setEditP({
+                    ...p,
+                    price: (p.price_cents / 100).toFixed(2),
+                    cost: (p.cost_cents / 100).toFixed(2),
+                    stock: String(p.stock)
+                  })}
+                >
+                  <Pencil size={14}/>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {editP && (
+            <div className="settings-card" style={{marginTop: 14}}>
+              <span className="eyebrow">corrigir produto</span>
+              <label>Nome<input value={editP.name} onChange={e => setEditP({...editP, name: e.target.value})}/></label>
+              <label>Descrição<input value={editP.description} onChange={e => setEditP({...editP, description: e.target.value})}/></label>
+              <div className="two-cols">
+                <label>Preço (R$)<input value={editP.price} onChange={e => setEditP({...editP, price: e.target.value})}/></label>
+                <label>Custo (R$)<input value={editP.cost} onChange={e => setEditP({...editP, cost: e.target.value})}/></label>
+              </div>
+              <div className="two-cols">
+                <label>Quantidade<input value={editP.stock} onChange={e => setEditP({...editP, stock: e.target.value})}/></label>
+                <label>
+                  Categoria
+                  <select value={editP.category_id} onChange={e => setEditP({...editP, category_id: e.target.value})}>
+                    {[1, 2, 3, 4].map(i => <option key={i} value={i}>{CATNAMES[i]}</option>)}
+                  </select>
+                </label>
+              </div>
+              <label>
+                Imagem
+                <select value={editP.image_url} onChange={e => setEditP({...editP, image_url: e.target.value})}>
+                  <option value={IMG.doces}>Doces</option>
+                  <option value={IMG.balas}>Balas</option>
+                  <option value={IMG.lanches}>Lanches</option>
+                  <option value={IMG.utilidades}>Utilidades</option>
+                </select>
+              </label>
+              <Button onClick={saveEditProduct}>Salvar <Check size={16}/></Button>
+              <Button variant="ghost" onClick={() => setEditP(null)}>Cancelar</Button>
+            </div>
+          )}
+
+          <Button variant="soft" onClick={() => setScreen("product")}>
+            <Plus size={16}/> Novo produto
+          </Button>
+        </main>
+        <BottomNav items={opNav} active="home" onSelect={setScreen}/>
       </div>
     );
   }
@@ -1926,10 +2051,10 @@ function OperatorApp({screen, setScreen, onExit, onSignOut}: {
             <b>Novo produto</b>
             <span>tirar foto e cadastrar</span>
           </button>
-          <button onClick={() => toast.success("Meus produtos no catálogo")}>
+          <button onClick={() => setScreen("products")}>
             <Package/>
             <b>Meus produtos</b>
-            <span>ver no painel do gestor</span>
+            <span>{prods.filter(p => p.active !== false).length} disponíveis</span>
           </button>
           <button onClick={() => setScreen("orders")}>
             <ClipboardList/>
@@ -1996,20 +2121,17 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
   const lowStock = prods.filter(p => p.stock < 10).length;
 
   const saveEdit = async () => {
-    const price = Math.round(parseFloat(edit.price || "0") * 100);
-    const cost = Math.round(parseFloat(edit.cost || "0") * 100);
     const payload = {
       name: edit.name,
       description: edit.description || "",
-      price_cents: price,
-      cost_cents: cost,
+      price_cents: Math.round(parseFloat(edit.price || "0") * 100),
+      cost_cents: Math.round(parseFloat(edit.cost || "0") * 100),
       stock: parseInt(edit.stock || "0", 10),
       image_url: edit.image_url,
       category_id: parseInt(edit.category_id || "1", 10),
       active: edit.active !== false
     };
     if (edit.isNew) {
-      delete (payload as any).isNew;
       await insertProd(payload);
       toast.success("Produto criado");
     } else {
@@ -2274,8 +2396,8 @@ function ManagerApp({tab, setTab, onExit, onSignOut}: {
             <label>WhatsApp do Valdir<input value={form.whatsapp_number || ""} onChange={e => setForm({...form, whatsapp_number: e.target.value})}/></label>
             <label>Endereço de retirada<input value={form.pickup_address || ""} onChange={e => setForm({...form, pickup_address: e.target.value})}/></label>
             <div className="two-cols">
-              <label>Entrada PIX (%)<input type="number" step="0.05" min="0" max="1" value={form.entry_pct_pix ?? 0.5} onChange={e => setForm({...form, entry_pct_pix: parseFloat(e.target.value)})}/></label>
-              <label>Entrada cartão (%)<input type="number" step="0.05" min="0" max="1" value={form.entry_pct_card ?? 0.5} onChange={e => setForm({...form, entry_pct_card: parseFloat(e.target.value)})}/></label>
+              <label>Entrada PIX (0–1)<input type="number" step="0.05" min="0" max="1" value={form.entry_pct_pix ?? 0.5} onChange={e => setForm({...form, entry_pct_pix: parseFloat(e.target.value)})}/></label>
+              <label>Entrada cartão (0–1)<input type="number" step="0.05" min="0" max="1" value={form.entry_pct_card ?? 0.5} onChange={e => setForm({...form, entry_pct_card: parseFloat(e.target.value)})}/></label>
             </div>
             <label>
               Regra do dinheiro

@@ -55,6 +55,6 @@ label{color:#4b3a31}input,select{color:var(--ink);border-color:#d6c8bb}input::pl
 .bottom-nav{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
 
 /* Rodada 4 — logo maior e sem distorção (arte paisagem preservada); favicon quadrado via /favicon.svg. */
-.brand img{height:46px;width:auto;max-width:70px;object-fit:contain}
-.topbar .brand img{height:42px;width:auto;max-width:64px;object-fit:contain}
-.protected-mark img{height:46px;width:auto;max-width:70px;object-fit:contain}
+.brand img{height:56px;width:auto;max-width:86px;object-fit:contain}
+.topbar .brand img{height:48px;width:auto;max-width:76px;object-fit:contain}
+.protected-mark img{height:56px;width:auto;max-width:86px;object-fit:contain}
