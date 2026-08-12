@@ -550,13 +550,7 @@ function AccountPage({
   repeat,
 }: any) {
   const [profile, setProfile] = useState<any>(null);
-  const [newAddr, setNewAddr] = useState<any>({
-    place_name: "",
-    street: "",
-    number: "",
-    district: "",
-    region: "Centro",
-  });
+  const [newAddr, setNewAddr] = useState<any>({ place_name: "", street: "", number: "", district: "", region: "Centro", city: "Ribeirão Preto" });
 
   useEffect(() => {
     if (customer)
@@ -581,23 +575,11 @@ function AccountPage({
   };
 
   const addAddress = async () => {
-    if (!customer?.id || !newAddr.street) {
-      toast.error("Informe ao menos a rua.");
-      return;
-    }
-    const { data } = await supabase
-      .from("addresses")
-      .insert({ ...newAddr, city: "Ribeirão Preto", customer_id: customer.id })
-      .select()
-      .single();
+    if (!customer?.id) return;
+    if (newAddr.city !== "Araraquara" && !newAddr.street) { toast.error("Informe ao menos a rua."); return; }
+    const { data } = await supabase.from("addresses").insert({ ...newAddr, customer_id: customer.id }).select().single();
     if (data) setMyAddresses([data, ...myAddresses]);
-    setNewAddr({
-      place_name: "",
-      street: "",
-      number: "",
-      district: "",
-      region: "Centro",
-    });
+    setNewAddr({ place_name: "", street: "", number: "", district: "", region: "Centro", city: "Ribeirão Preto" });
     toast.success("Endereço salvo!");
   };
 
@@ -704,7 +686,7 @@ function AccountPage({
                   <div>
                     <b>{a.place_name || "Endereço"}</b>
                     <span>
-                      {a.street}, {a.number} · {a.district} · {a.region}
+                      {a.city === "Araraquara" ? "Araraquara (encomenda)" : `${a.street}, ${a.number} · ${a.district} · ${a.region}`}
                     </span>
                   </div>
                   <button
@@ -727,52 +709,71 @@ function AccountPage({
                 />
               </label>
               <label>
-                Rua
-                <input
-                  value={newAddr.street}
-                  onChange={(e) =>
-                    setNewAddr({ ...newAddr, street: e.target.value })
-                  }
-                />
-              </label>
-              <div className="two-cols">
-                <label>
-                  Número
-                  <input
-                    value={newAddr.number}
-                    onChange={(e) =>
-                      setNewAddr({ ...newAddr, number: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Bairro
-                  <input
-                    list="rp-bairros-conta"
-                    value={newAddr.district}
-                    onChange={(e) => onDistrict(e.target.value)}
-                    placeholder="Digite o bairro"
-                  />
-                </label>
-              </div>
-              <datalist id="rp-bairros-conta">
-                {ALL_RP_DISTRICTS.map((b) => (
-                  <option key={b} value={b} />
-                ))}
-              </datalist>
-              <label>
-                Zona (automática pelo bairro)
+                Cidade
                 <select
-                  value={newAddr.region}
+                  value={newAddr.city}
                   onChange={(e) =>
-                    setNewAddr({ ...newAddr, region: e.target.value })
+                    setNewAddr({ ...newAddr, city: e.target.value })
                   }
                 >
-                  {RP_REGIONS.map((r) => (
-                    <option key={r}>{r}</option>
-                  ))}
+                  <option>Ribeirão Preto</option>
+                  <option>Araraquara</option>
                 </select>
               </label>
+              {newAddr.city !== "Araraquara" && (
+                <>
+                  <label>
+                    Rua
+                    <input
+                      value={newAddr.street}
+                      onChange={(e) =>
+                        setNewAddr({ ...newAddr, street: e.target.value })
+                      }
+                    />
+                  </label>
+                  <div className="two-cols">
+                    <label>
+                      Número
+                      <input
+                        value={newAddr.number}
+                        onChange={(e) =>
+                          setNewAddr({ ...newAddr, number: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Bairro
+                      <input
+                        list="rp-bairros-conta"
+                        value={newAddr.district}
+                        onChange={(e) => onDistrict(e.target.value)}
+                        placeholder="Digite o bairro"
+                      />
+                    </label>
+                  </div>
+                  <datalist id="rp-bairros-conta">
+                    {ALL_RP_DISTRICTS.map((b) => (
+                      <option key={b} value={b} />
+                    ))}
+                  </datalist>
+                  <label>
+                    Zona (automática pelo bairro)
+                    <select
+                      value={newAddr.region}
+                      onChange={(e) =>
+                        setNewAddr({ ...newAddr, region: e.target.value })
+                      }
+                    >
+                      {RP_REGIONS.map((r) => (
+                        <option key={r}>{r}</option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              )}
+              {newAddr.city === "Araraquara" && (
+                <p className="muted">Araraquara é atendida por encomenda programada — só a cidade já basta.</p>
+              )}
               <Button variant="soft" onClick={addAddress}>
                 <Plus size={16} /> Adicionar endereço
               </Button>
@@ -922,11 +923,12 @@ function CheckoutPage({
       : `${addr || "Rua..."}, ${num || "s/n"} – ${district || "Centro"}`;
 
   const useSavedAddress = (a: any) => {
+    setCity(a.city || "Ribeirão Preto");
     setLocalName(a.place_name || "");
-    setAddr(a.street);
-    setNum(a.number);
-    setDistrict(a.district);
-    setRegion(a.region);
+    setAddr(a.street || "");
+    setNum(a.number || "");
+    setDistrict(a.district || "");
+    setRegion(a.region || "Zona Norte");
   };
 
   const onDistrictChange = (v: string) => {
@@ -1136,8 +1138,7 @@ Recado: ${notes || "—"}`;
                           <option value="">— digitar novo endereço —</option>
                           {addresses.map((a: any) => (
                             <option key={a.id} value={a.id}>
-                              {a.place_name || a.street}, {a.number} ·{" "}
-                              {a.district}
+                              {a.place_name || "Endereço"} · {a.city === "Araraquara" ? "Araraquara" : a.district}
                             </option>
                           ))}
                         </select>
