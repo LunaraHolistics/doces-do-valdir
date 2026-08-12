@@ -43,22 +43,31 @@ export const payLabel = (o: any) => {
 export const dateBR = (iso?: string | null) =>
   iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "";
 
+// ---------- WhatsApp ----------
+// Normaliza telefone brasileiro: adiciona 55 automaticamente se vier só com DDD+número
+export function normalizePhone(number: string) {
+  let digits = (number || "").replace(/\D/g, "");
+  if (digits.length >= 10 && digits.length <= 11) digits = "55" + digits;
+  return digits;
+}
+
+export function waLink(number: string, text: string) {
+  const digits = normalizePhone(number);
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
+
+export function openWhatsApp(number: string | undefined, text: string) {
+  if (!number) return false;
+  const digits = normalizePhone(number);
+  if (digits.length < 12) return false;
+  window.open(waLink(number, text), "_blank");
+  return true;
+}
+
+// ---------- Storage ----------
 export async function uploadToBucket(bucket: string, path: string, file: File) {
   const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
   if (error) throw error;
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
-}
-
-export function waLink(number: string, text: string) {
-  const digits = (number || "").replace(/\D/g, "");
-  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
-}
-
-export function openWhatsApp(number: string | undefined, text: string) {
-  if (number && number.replace(/\D/g, "").length >= 10) {
-    window.open(waLink(number, text), "_blank");
-    return true;
-  }
-  return false;
 }
