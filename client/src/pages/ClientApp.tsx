@@ -44,7 +44,6 @@ import {
 } from "../lib/helpers";
 import { ALL_RP_DISTRICTS, RP_REGIONS, zoneForDistrict } from "../data/rpZones";
 import {
-  Logo,
   Button,
   Header,
   Stepper,
@@ -388,8 +387,7 @@ export default function ClientApp() {
   return (
     <div className="app-shell">
       <header className="client-hero">
-        <div className="hero-top">
-          <Logo onClick={() => go("home")} />
+        <div className="hero-top" style={{ justifyContent: "flex-end" }}>
           <button
             className="account-btn"
             onClick={() => go("account")}

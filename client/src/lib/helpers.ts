@@ -6,7 +6,7 @@ export const money = (n: number) =>
 export const moneyFromCents = (c: number) => money(c / 100);
 
 export const CATNAMES: Record<number, string> = {
-  1: "Doces", 2: "Balas", 3: "Lanches", 4: "Utilidades"
+  1: "Doces", 2: "Balas", 3: "Outros", 4: "Utilidades"
 };
 
 export const STATUS_SEQ = [

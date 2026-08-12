@@ -141,76 +141,150 @@ html { scroll-behavior: smooth; }
 }
 
 /* =========================================
-   Rodada 5 — hero "palmeirense": degradê verde→branco,
-   texto com contraste, logo maior e sem ilustração no topo
+   Rodada 5+6+7 — Banner limpo como vitrine
+   (selo no favicon/PWA/WhatsApp, banner na home)
    ========================================= */
 
-/* fundo novo: verde (esquerda) → branco (direita) */
-.client-hero{
-  height:auto;
-  min-height:232px;
-  background:linear-gradient(90deg,#14532d 0%,#1f6f4a 45%,#2f7659 62%,#f2f8f3 100%);
-  padding-bottom:36px;
+.client-hero {
+  height: auto !important;
+  min-height: 0;
+  background: var(--cream);
+  padding: 14px 18px 20px;
+  position: relative;
+  overflow: visible;
 }
-.client-hero:after{display:none}
 
-/* some com a ilustração amarela do topo */
-.client-hero>img{display:none}
+.client-hero:after {
+  display: none !important;
+}
 
-/* logo maior na home */
-.client-hero .brand img{height:78px !important;max-width:136px !important}
-.client-hero .brand strong{color:#d9ecdf}
-.client-hero .brand b{color:#ffffff}
+/* Esconder selo na home (ele vai no favicon/PWA/WhatsApp) */
+.client-hero .brand-btn {
+  display: none;
+}
 
-/* texto do hero com contraste forte sobre o verde */
-.hero-copy{width:72%;margin-top:30px;background:transparent;padding:0}
-.hero-copy span{color:#cfe8d8}
-.hero-copy h1{color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+/* Banner como vitrine */
+.client-hero > img,
+.client-hero .hero-banner {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
+  border-radius: 18px !important;
+  margin: 0 !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+  box-shadow: var(--shadow);
+}
 
-/* botão de conta visível sobre o degradê */
-.client-hero .account-btn{background:#ffffff;color:#1f6f4a}
+/* Wordmark verde sobre creme */
+.client-hero .brand strong {
+  color: var(--muted);
+}
+
+.client-hero .brand b {
+  color: var(--green);
+}
+
+/* Botão de conta visível */
+.client-hero .account-btn {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
 
 /* =========================================
    Lote 14 — sob encomenda, links legais e impressão PDF
    ========================================= */
-.stock.encomenda{color:#aa7628;font-weight:700}
-.legal-links{display:flex;justify-content:center;gap:10px;margin:26px 0 10px;font-size:11px}
-.legal-links a{color:var(--muted);text-decoration:underline}
-.legal h2{font-family:'Fraunces',serif;font-size:19px;margin:18px 0 6px;color:var(--ink)}
-.legal p,.legal li{font-size:13px;color:var(--muted);line-height:1.65}
-.legal ul{padding-left:18px;margin:6px 0}
+.stock.encomenda {
+  color: #aa7628;
+  font-weight: 700;
+}
 
-/* relatório imprimível (salvar como PDF) */
-#print-report{display:none}
-@media print{
-  body *{visibility:hidden}
-  #print-report,#print-report *{visibility:visible}
-  #print-report{display:block;position:absolute;left:0;top:0;width:100%;padding:24px;background:#fff;color:#000}
-  #print-report h1{font-size:20px;margin:0 0 4px}
-  #print-report h2{font-size:14px;margin:14px 0 4px}
-  #print-report p{font-size:11px;margin:2px 0}
-  #print-report table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
-  #print-report th,#print-report td{border:1px solid #bbb;padding:4px 6px;text-align:left}
+.legal-links {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 26px 0 10px;
+  font-size: 11px;
 }
-/* =========================================
-   Rodada 6 — banner como vitrine da home;
-   selo como identidade (favicon/PWA/WhatsApp)
-   ========================================= */
-.client-hero{
-  background:var(--cream);
-  min-height:0;
-  padding:16px 18px 20px;
+
+.legal-links a {
+  color: var(--muted);
+  text-decoration: underline;
 }
-.client-hero:after{display:none}
-.client-hero>img{display:block}
-.hero-banner{
-  width:100%;
-  height:auto;
-  border-radius:18px;
-  margin-top:14px;
-  box-shadow:var(--shadow);
+
+.legal h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  margin: 18px 0 6px;
+  color: var(--ink);
 }
-/* wordmark volta ao verde sobre o creme */
-.client-hero .brand strong{color:var(--muted)}
-.client-hero .brand b{color:var(--green)}
-.client-hero .account-btn{background:var(--green-soft);color:var(--green-dark)}
+
+.legal p,
+.legal li {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.legal ul {
+  padding-left: 18px;
+  margin: 6px 0;
+}
+
+/* Relatório imprimível (salvar como PDF) */
+#print-report {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  #print-report,
+  #print-report * {
+    visibility: visible;
+  }
+  
+  #print-report {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 24px;
+    background: #fff;
+    color: #000;
+  }
+  
+  #print-report h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+  }
+  
+  #print-report h2 {
+    font-size: 14px;
+    margin: 14px 0 4px;
+  }
+  
+  #print-report p {
+    font-size: 11px;
+    margin: 2px 0;
+  }
+  
+  #print-report table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin-top: 6px;
+  }
+  
+  #print-report th,
+  #print-report td {
+    border: 1px solid #bbb;
+    padding: 4px 6px;
+    text-align: left;
+  }
+}
