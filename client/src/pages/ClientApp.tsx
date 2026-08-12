@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, ArrowRight, Camera, Check, Copy, CreditCard, DollarSign, HeartHandshake,
   Home as HomeIcon, MapPin, Search, ShoppingCart, Store, Trash2, Truck, UserRound,
-  WalletCards, Zap, Image as ImageIcon
+  WalletCards, Zap, Image as ImageIcon, Pencil, Plus, X
 } from "lucide-react";
 import { supabase, hasSupabase } from "../lib/supabase";
 import { currentSession, onAuthChange, signInWithGoogle, signOut, ensureCustomer } from "../lib/auth";
@@ -12,6 +12,7 @@ import {
   money, moneyFromCents, openWhatsApp, uploadToBucket, STATUS_SEQ, statusIdx,
   orderTotal, orderEntry, orderBalance, orderLabel, dateBR
 } from "../lib/helpers";
+import { ALL_RP_DISTRICTS, RP_REGIONS, zoneForDistrict } from "../data/rpZones";
 import { Logo, Button, Header, Stepper, BottomNav, Empty, WhatsAppBtn } from "../ui/components";
 import { IMG, MOCK_HISTORY } from "../data/mock";
 
@@ -21,6 +22,7 @@ export default function ClientApp() {
 
   const [uid, setUid] = useState<string | null>(null);
   const [customer, setCustomer] = useState<any>(null);
+  const [myAddresses, setMyAddresses] = useState<any[]>([]);
   const [screen, setScreen] = useState("home");
   const [selected, setSelected] = useState<any | null>(null);
   const [category, setCategory] = useState("Todos");
@@ -42,6 +44,13 @@ export default function ClientApp() {
     if (uid) ensureCustomer().then(setCustomer);
     else setCustomer(null);
   }, [uid]);
+
+  useEffect(() => {
+    if (!customer?.id) { setMyAddresses([]); return; }
+    supabase.from("addresses").select("*").eq("customer_id", customer.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setMyAddresses(data || []));
+  }, [customer?.id]);
 
   useEffect(() => {
     if (!hasSupabase || !customer) { setMyOrders([]); return; }
@@ -187,7 +196,7 @@ export default function ClientApp() {
     return (
       <CheckoutPage
         cartItems={cartItems} cartTotal={cartTotal} step={checkoutStep} setStep={setCheckoutStep}
-        settings={settings} customer={customer} uid={uid}
+        settings={settings} customer={customer} uid={uid} addresses={myAddresses}
         onBack={() => (checkoutStep === 1 ? go("cart") : setCheckoutStep(checkoutStep - 1))}
         onDone={(od: any) => { setOrderDetails(od); go("order"); }}
         decrementStock={async (items: any[]) => {
@@ -201,14 +210,7 @@ export default function ClientApp() {
   }
 
   if (screen === "order" && orderDetails) {
-    return (
-      <StatusView
-        order={orderDetails}
-        setOrder={setOrderDetails}
-        settings={settings}
-        go={go}
-      />
-    );
+    return <StatusView order={orderDetails} setOrder={setOrderDetails} settings={settings} go={go} />;
   }
 
   if (screen === "track") {
@@ -217,65 +219,12 @@ export default function ClientApp() {
 
   if (screen === "account") {
     return (
-      <div className="app-shell">
-        <Header title="Minha conta" back onBack={() => go("home")} onLogo={() => go("home")} />
-        <main className="page">
-          {uid ? (
-            <>
-              <div className="account-card">
-                <div className="avatar">{(customer?.name || "C")[0]}</div>
-                <div>
-                  <b>{customer?.name || "Cliente"}</b>
-                  <span>conectado com Google</span>
-                </div>
-                <Check />
-              </div>
-              <div className="section-head">
-                <h2>Seus pedidos</h2>
-                <button className="link-btn" onClick={() => go("track")}>acompanhar por código <ArrowRight size={15} /></button>
-              </div>
-              {(hasSupabase ? myOrders : MOCK_HISTORY).length === 0 && (
-                <p className="muted">Você ainda não tem pedidos.</p>
-              )}
-              {(hasSupabase ? myOrders : MOCK_HISTORY).map((o: any) => (
-                <div className="order-card" key={o.id}>
-                  <div>
-                    <span className="eyebrow">{dateBR(o.created_at) || o.date} · {orderLabel(o)}</span>
-                    <b>{money(orderTotal(o) || historyTotalMock(o))}</b>
-                    <span>{summarize(o)}</span>
-                  </div>
-                  <span className="status-pill green">{o.status}</span>
-                  <Button variant="soft" onClick={() => { setOrderDetails(normalize(o)); go("order"); }}>
-                    Ver pedido <ArrowRight size={15} />
-                  </Button>
-                  <Button variant="ghost" onClick={() => repeat(o)}>🔄 Repetir pedido</Button>
-                </div>
-              ))}
-              <Button variant="ghost" onClick={async () => { await signOut(); toast.success("Você saiu."); }}>
-                Sair da conta
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="account-card">
-                <div className="avatar">?</div>
-                <div>
-                  <b>Entrar para ver seu histórico</b>
-                  <span>ou acompanhe um pedido pelo código</span>
-                </div>
-              </div>
-              <Button variant="google" onClick={() => signInWithGoogle()}>
-                G <span>Entrar com Google</span>
-              </Button>
-              <Button variant="soft" onClick={() => go("track")}>
-                Acompanhar pedido por código <ArrowRight size={15} />
-              </Button>
-              <p className="muted">Você também pode comprar sem cadastro.</p>
-            </>
-          )}
-        </main>
-        {nav}
-      </div>
+      <AccountPage
+        uid={uid} customer={customer} setCustomer={setCustomer}
+        myOrders={myOrders} myAddresses={myAddresses}
+        setMyAddresses={setMyAddresses}
+        go={go} repeat={repeat}
+      />
     );
   }
 
@@ -359,7 +308,7 @@ export default function ClientApp() {
                       <button onClick={e => e.stopPropagation()}>+</button>
                     </>
                   ) : (
-                    <><ArrowRight size={0} className="hidden" />adicionar</>
+                    <><Plus size={17} /> adicionar</>
                   )}
                 </div>
               </div>
@@ -375,39 +324,169 @@ export default function ClientApp() {
   );
 }
 
-function historyTotalMock(o: any) {
-  return (o.items || []).reduce((s: number, it: any) => s + it.qty * it.price, 0);
-}
-function summarize(o: any) {
-  if (o.order_items) return o.order_items.map((it: any) => `${it.qty}x ${it.product_name}`).join(", ");
-  return (o.items || []).map((it: any) => `${it.qty}x ${it.id}`).join(", ");
-}
-function normalize(o: any) {
-  return {
-    ...o,
-    payment: o.payment_method === "CARTAO" ? "Cartão" : o.payment_method === "PIX" ? "PIX" : "Dinheiro",
-    payFull: o.entry_pct === 1,
-    customer: o.customer_name,
-    delivery: o.delivery_mode === "RETIRADA" ? "Retirada" : "Entrega",
-    total: orderTotal(o)
+/* ============ CONTA (perfil + endereços + histórico) ============ */
+function AccountPage({ uid, customer, setCustomer, myOrders, myAddresses, setMyAddresses, go, repeat }: any) {
+  const [profile, setProfile] = useState<any>(null);
+  const [newAddr, setNewAddr] = useState<any>({ place_name: "", street: "", number: "", district: "", region: "Centro" });
+
+  useEffect(() => {
+    if (customer) setProfile({
+      name: customer.name || "", phone: customer.phone || "",
+      business_name: customer.business_name || "", notes: customer.notes || ""
+    });
+  }, [customer]);
+
+  const saveProfile = async () => {
+    if (!customer?.id) return;
+    await supabase.from("customers").update(profile).eq("id", customer.id);
+    setCustomer({ ...customer, ...profile });
+    toast.success("Dados salvos! Eles preenchem seus pedidos automaticamente.");
   };
+
+  const onDistrict = (v: string) => {
+    const z = zoneForDistrict(v);
+    setNewAddr((a: any) => ({ ...a, district: v, region: z || a.region }));
+  };
+
+  const addAddress = async () => {
+    if (!customer?.id || !newAddr.street) { toast.error("Informe ao menos a rua."); return; }
+    const { data } = await supabase.from("addresses").insert({ ...newAddr, city: "Ribeirão Preto", customer_id: customer.id }).select().single();
+    if (data) setMyAddresses([data, ...myAddresses]);
+    setNewAddr({ place_name: "", street: "", number: "", district: "", region: "Centro" });
+    toast.success("Endereço salvo!");
+  };
+
+  const delAddress = async (id: string) => {
+    await supabase.from("addresses").delete().eq("id", id);
+    setMyAddresses(myAddresses.filter((a: any) => a.id !== id));
+    toast.success("Endereço removido.");
+  };
+
+  return (
+    <div className="app-shell">
+      <Header title="Minha conta" back onBack={() => go("home")} onLogo={() => go("home")} />
+      <main className="page">
+        {uid ? (
+          <>
+            <div className="account-card">
+              <div className="avatar">{(customer?.name || "C")[0]}</div>
+              <div><b>{customer?.name || "Cliente"}</b><span>conectado com Google</span></div>
+              <Check />
+            </div>
+
+            {/* MEUS DADOS */}
+            <div className="settings-card" style={{ marginBottom: 16 }}>
+              <span className="eyebrow">meus dados</span>
+              <h2 style={{ fontFamily: "Fraunces", fontSize: 20, margin: "4px 0 10px" }}>Preencha uma vez, use sempre</h2>
+              <label>Nome do responsável<input value={profile?.name || ""} onChange={e => setProfile({ ...profile, name: e.target.value })} /></label>
+              <label>Nome do estabelecimento (se comercial)<input value={profile?.business_name || ""} onChange={e => setProfile({ ...profile, business_name: e.target.value })} placeholder="Ex.: Bar do Zé" /></label>
+              <label>WhatsApp<input value={profile?.phone || ""} onChange={e => setProfile({ ...profile, phone: e.target.value })} placeholder="16 99999-9999" /></label>
+              <label>Recado / ponto de referência<textarea value={profile?.notes || ""} onChange={e => setProfile({ ...profile, notes: e.target.value })} placeholder="Ex.: portão verde, deixar com a recepcionista" style={{ minHeight: 60, padding: 10, borderRadius: 12, border: "1px solid #d6c8bb", background: "#fffdf8", width: "100%" }} /></label>
+              <Button onClick={saveProfile}>Salvar meus dados <Check size={16} /></Button>
+            </div>
+
+            {/* MEUS ENDEREÇOS */}
+            <div className="settings-card" style={{ marginBottom: 16 }}>
+              <span className="eyebrow">meus endereços</span>
+              {myAddresses.map((a: any) => (
+                <div className="manager-row" key={a.id} style={{ margin: "8px 0" }}>
+                  <div className="mini-avatar"><MapPin size={14} /></div>
+                  <div>
+                    <b>{a.place_name || "Endereço"}</b>
+                    <span>{a.street}, {a.number} · {a.district} · {a.region}</span>
+                  </div>
+                  <button className="icon-btn" style={{ width: 32, height: 32, color: "#bd463b" }} onClick={() => delAddress(a.id)}><X size={14} /></button>
+                </div>
+              ))}
+              <label>Apelido do local<input value={newAddr.place_name} onChange={e => setNewAddr({ ...newAddr, place_name: e.target.value })} placeholder="Ex.: Casa, Bar, Escritório" /></label>
+              <label>Rua<input value={newAddr.street} onChange={e => setNewAddr({ ...newAddr, street: e.target.value })} /></label>
+              <div className="two-cols">
+                <label>Número<input value={newAddr.number} onChange={e => setNewAddr({ ...newAddr, number: e.target.value })} /></label>
+                <label>Bairro
+                  <input list="rp-bairros-conta" value={newAddr.district} onChange={e => onDistrict(e.target.value)} placeholder="Digite o bairro" />
+                </label>
+              </div>
+              <datalist id="rp-bairros-conta">{ALL_RP_DISTRICTS.map(b => <option key={b} value={b} />)}</datalist>
+              <label>Zona (automática pelo bairro)
+                <select value={newAddr.region} onChange={e => setNewAddr({ ...newAddr, region: e.target.value })}>
+                  {RP_REGIONS.map(r => <option key={r}>{r}</option>)}
+                </select>
+              </label>
+              <Button variant="soft" onClick={addAddress}><Plus size={16} /> Adicionar endereço</Button>
+            </div>
+
+            {/* HISTÓRICO */}
+            <div className="section-head">
+              <h2>Seus pedidos</h2>
+              <button className="link-btn" onClick={() => go("track")}>acompanhar por código <ArrowRight size={15} /></button>
+            </div>
+            {myOrders.length === 0 && <p className="muted">Você ainda não tem pedidos.</p>}
+            {myOrders.map((o: any) => (
+              <div className="order-card" key={o.id}>
+                <div>
+                  <span className="eyebrow">{dateBR(o.created_at)} · {orderLabel(o)}</span>
+                  <b>{money(orderTotal(o))}</b>
+                  <span>{(o.order_items || []).map((it: any) => `${it.qty}x ${it.product_name}`).join(", ")}</span>
+                </div>
+                <span className="status-pill green">{o.status}</span>
+                <Button variant="soft" onClick={() => { setOrderDetails(normalize(o)); go("order"); }}>Ver pedido <ArrowRight size={15} /></Button>
+                <Button variant="ghost" onClick={() => repeat(o)}>🔄 Repetir pedido</Button>
+              </div>
+            ))}
+            <Button variant="ghost" onClick={async () => { await signOut(); toast.success("Você saiu."); }}>Sair da conta</Button>
+          </>
+        ) : (
+          <>
+            <div className="account-card">
+              <div className="avatar">?</div>
+              <div><b>Entrar para ver seu histórico</b><span>ou acompanhe um pedido pelo código</span></div>
+            </div>
+            <Button variant="google" onClick={() => signInWithGoogle()}>G <span>Entrar com Google</span></Button>
+            <Button variant="soft" onClick={() => go("track")}>Acompanhar pedido por código <ArrowRight size={15} /></Button>
+            <p className="muted">Você também pode comprar sem cadastro.</p>
+          </>
+        )}
+      </main>
+      <BottomNav
+        items={[
+          { id: "home", label: "Início", icon: <HomeIcon size={19} /> },
+          { id: "cart", label: "Carrinho", icon: <ShoppingCart size={19} /> },
+          { id: "account", label: "Conta", icon: <UserRound size={19} /> }
+        ]}
+        active="account"
+        onSelect={id => go(id)}
+      />
+    </div>
+  );
 }
 
-function CheckoutPage({ cartItems, cartTotal, step, setStep, settings, customer, uid, onBack, onDone, decrementStock }: any) {
+/* ============ CHECKOUT ============ */
+function CheckoutPage({ cartItems, cartTotal, step, setStep, settings, customer, uid, addresses, onBack, onDone, decrementStock }: any) {
   const [city, setCity] = useState("Ribeirão Preto");
   const [delivery, setDelivery] = useState("Entrega");
   const [urgent, setUrgent] = useState(false);
   const [payment, setPayment] = useState("PIX");
   const [payFull, setPayFull] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
-  const [name, setName] = useState(customer?.name || "");
-  const [phone, setPhone] = useState(customer?.phone || "");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [business, setBusiness] = useState("");
+  const [notes, setNotes] = useState("");
   const [localName, setLocalName] = useState("");
   const [addr, setAddr] = useState("");
   const [num, setNum] = useState("");
   const [district, setDistrict] = useState("");
   const [region, setRegion] = useState("Zona Norte");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (customer) {
+      setName(customer.name || "");
+      setPhone(customer.phone || "");
+      setBusiness(customer.business_name || "");
+      setNotes(customer.notes || "");
+    }
+  }, [customer]);
 
   const pixKey = settings?.pix_key || "doces.valdir@demo.com";
   const pixHolder = settings?.pix_holder || "Valdir";
@@ -421,28 +500,41 @@ function CheckoutPage({ cartItems, cartTotal, step, setStep, settings, customer,
   const amountToPay = needsEntry ? entry : cartTotal;
   const orderNumber = "DV-" + Math.floor(1000 + Math.random() * 9000);
 
-  const addressLine = city === "Araraquara"
+  const isAraraquara = city === "Araraquara";
+  const addressLine = isAraraquara
     ? "Encomenda — combinação de retirada/envio"
     : delivery === "Retirada"
       ? "Retirada no balcão do Valdir"
       : `${addr || "Rua..."}, ${num || "s/n"} – ${district || "Centro"}`;
 
+  const useSavedAddress = (a: any) => {
+    setLocalName(a.place_name || "");
+    setAddr(a.street);
+    setNum(a.number);
+    setDistrict(a.district);
+    setRegion(a.region);
+  };
+
+  const onDistrictChange = (v: string) => {
+    setDistrict(v);
+    const z = zoneForDistrict(v);
+    if (z) setRegion(z);
+  };
+
   const whatsMsg = `🧾 Pedido ${orderNumber} · Produtos do Valdir
 Cliente: ${name || "Visitante"}
-Telefone: ${phone || "não informado"}
+${business ? `Estabelecimento: ${business}\n` : ""}Telefone: ${phone || "não informado"}
 Cidade: ${city}
-Modalidade: ${city === "Araraquara" ? "Encomenda" : delivery}
+Modalidade: ${isAraraquara ? "Encomenda" : delivery}
 Local: ${localName || "—"}
 Endereço: ${addressLine}
-Região: ${city === "Araraquara" ? "Encomenda" : region}
-Itens:
+${!isAraraquara && delivery === "Entrega" ? `Região: ${region}\n` : ""}Itens:
 ${cartItems.map(({ p, q }: any) => `• ${q}x ${p.name} — ${money(p.price_cents * q / 100)}`).join("\n")}
 Total: ${money(cartTotal)}
 Pagamento: ${payment}
 Valor a pagar: ${money(amountToPay)} (${payFull && payment !== "Dinheiro" ? "integral" : needsEntry ? `entrada ${Math.round(pct * 100)}%` : "total na entrega/retirada"})
-${needsEntry ? `Saldo: ${money(cartTotal - entry)}` : ""}
-Urgente: ${urgent ? "🚨 SIM — o quanto antes" : "não"}
-Obs: —`;
+${needsEntry ? `Saldo: ${money(cartTotal - entry)}` : ""}Urgente: ${urgent ? "🚨 SIM — o quanto antes" : "não"}
+Recado: ${notes || "—"}`;
 
   const submitOrder = async () => {
     setSubmitting(true);
@@ -454,10 +546,12 @@ Obs: —`;
           customer_id: customer?.id || null,
           customer_name: name || "Visitante",
           customer_phone: phone || "",
+          business_name: business || "",
+          notes: notes || "",
           city,
-          delivery_mode: city === "Araraquara" ? "ENCOMENDA" : delivery === "Retirada" ? "RETIRADA" : "ENTREGA",
+          delivery_mode: isAraraquara ? "ENCOMENDA" : delivery === "Retirada" ? "RETIRADA" : "ENTREGA",
           address_text: addressLine,
-          region: city === "Araraquara" ? "Encomenda" : region,
+          region: isAraraquara ? "Encomenda" : region,
           urgent,
           payment_method: payment === "Cartão" ? "CARTAO" : payment.toUpperCase(),
           entry_pct: needsEntry ? pct : 1,
@@ -498,8 +592,9 @@ Obs: —`;
           <>
             <span className="eyebrow">etapa 2 de 3 · entrega</span>
             <h1>Como você recebe?</h1>
-            <label>Nome<input value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Maria de Souza" /></label>
-            <label>Telefone<input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(16) 99999-9999" /></label>
+            <label>Nome do responsável<input value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Maria de Souza" /></label>
+            <label>Estabelecimento (se comercial)<input value={business} onChange={e => setBusiness(e.target.value)} placeholder="Ex.: Bar do Zé" /></label>
+            <label>WhatsApp<input value={phone} onChange={e => setPhone(e.target.value)} placeholder="16 99999-9999" /></label>
             {!uid && (
               <Button variant="google" onClick={() => signInWithGoogle()}>G <span>Entrar com Google</span></Button>
             )}
@@ -510,38 +605,60 @@ Obs: —`;
                 <option>Araraquara</option>
               </select>
             </label>
-            {city === "Ribeirão Preto" ? (
-              <div className="choice-row">
-                <button className={delivery === "Entrega" ? "chosen" : ""} onClick={() => setDelivery("Entrega")}>
-                  <Truck /><b>Entrega</b><span>Organizamos por região</span>
-                </button>
-                {pickupEnabled && (
-                  <button className={delivery === "Retirada" ? "chosen" : ""} onClick={() => setDelivery("Retirada")}>
-                    <Store /><b>Retirada</b><span>opção habilitada</span>
-                  </button>
-                )}
-              </div>
+
+            {isAraraquara ? (
+              <div className="notice"><MapPin /><b>Encomenda para Araraquara</b><span>Próxima encomenda: <strong>{araraquaraDate}</strong>. Só a cidade já basta — o resto combinamos por WhatsApp.</span></div>
             ) : (
-              <div className="notice"><MapPin /><b>Encomenda para Araraquara</b><span>Próxima encomenda: <strong>{araraquaraDate}</strong></span></div>
-            )}
-            {delivery === "Entrega" && city === "Ribeirão Preto" && (
               <>
-                <label>Nome do local<input value={localName} onChange={e => setLocalName(e.target.value)} placeholder="Casa da Maria" /></label>
-                <label>Endereço<input value={addr} onChange={e => setAddr(e.target.value)} placeholder="Rua, avenida..." /></label>
-                <div className="two-cols">
-                  <label>Número<input value={num} onChange={e => setNum(e.target.value)} placeholder="123" /></label>
-                  <label>Bairro<input value={district} onChange={e => setDistrict(e.target.value)} placeholder="Centro" /></label>
+                <div className="choice-row">
+                  <button className={delivery === "Entrega" ? "chosen" : ""} onClick={() => setDelivery("Entrega")}>
+                    <Truck /><b>Entrega</b><span>Organizamos por região</span>
+                  </button>
+                  {pickupEnabled && (
+                    <button className={delivery === "Retirada" ? "chosen" : ""} onClick={() => setDelivery("Retirada")}>
+                      <Store /><b>Retirada</b><span>opção habilitada</span>
+                    </button>
+                  )}
                 </div>
-                <label>Região
-                  <select value={region} onChange={e => setRegion(e.target.value)}>
-                    <option>Zona Norte</option><option>Centro</option><option>Zona Sul</option><option>Zona Leste</option>
-                  </select>
-                </label>
+
+                {delivery === "Entrega" && (
+                  <>
+                    {uid && addresses?.length > 0 && (
+                      <label>Usar endereço salvo
+                        <select defaultValue="" onChange={e => {
+                          const a = addresses.find((x: any) => x.id === e.target.value);
+                          if (a) useSavedAddress(a);
+                        }}>
+                          <option value="">— digitar novo endereço —</option>
+                          {addresses.map((a: any) => (
+                            <option key={a.id} value={a.id}>{a.place_name || a.street}, {a.number} · {a.district}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    <label>Nome do local<input value={localName} onChange={e => setLocalName(e.target.value)} placeholder="Casa da Maria" /></label>
+                    <label>Endereço<input value={addr} onChange={e => setAddr(e.target.value)} placeholder="Rua, avenida..." /></label>
+                    <div className="two-cols">
+                      <label>Número<input value={num} onChange={e => setNum(e.target.value)} placeholder="123" /></label>
+                      <label>Bairro<input list="rp-bairros" value={district} onChange={e => onDistrictChange(e.target.value)} placeholder="Digite o bairro" /></label>
+                    </div>
+                    <datalist id="rp-bairros">{ALL_RP_DISTRICTS.map(b => <option key={b} value={b} />)}</datalist>
+                    <label>Zona da cidade (automática pelo bairro)
+                      <select value={region} onChange={e => setRegion(e.target.value)}>
+                        {RP_REGIONS.map(r => <option key={r}>{r}</option>)}
+                      </select>
+                    </label>
+                  </>
+                )}
+
+                {delivery === "Retirada" && (
+                  <div className="notice"><Store /><b>Retirada no balcão</b><span>{settings?.pickup_address || "Rua dos Doces, 123 — referência: praça central."}</span></div>
+                )}
               </>
             )}
-            {delivery === "Retirada" && city === "Ribeirão Preto" && (
-              <div className="notice"><Store /><b>Retirada no balcão</b><span>{settings?.pickup_address || "Rua dos Doces, 123 — referência: praça central."}</span></div>
-            )}
+
+            <label>Recado / ponto de referência<textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ex.: portão verde, deixar com a recepcionista" style={{ minHeight: 60, padding: 10, borderRadius: 12, border: "1px solid #d6c8bb", background: "#fffdf8", width: "100%" }} /></label>
+
             <div className="urgency">
               <div><Zap /><b>Quando você precisa receber?</b></div>
               <button className={!urgent ? "chosen" : ""} onClick={() => setUrgent(false)}>Posso aguardar a rota normal</button>
@@ -599,7 +716,8 @@ Obs: —`;
             <h1>Revise e envie</h1>
             <div className="summary">
               <span>Cliente</span><b>{name || "Visitante"}</b>
-              <span>Recebe</span><b>{city === "Araraquara" ? "Encomenda Araraquara" : `${delivery} · ${region}`}</b>
+              {business && (<><span>Estabelecimento</span><b>{business}</b></>)}
+              <span>Recebe</span><b>{isAraraquara ? "Encomenda Araraquara" : `${delivery} · ${region}`}</b>
               <span>Endereço</span><b>{addressLine}</b>
               <span>Pagamento</span><b>{payment} · {payment === "Dinheiro" ? "total na entrega/retirada" : payFull ? "integral" : `entrada ${Math.round(pct * 100)}%`}</b>
               {urgent && (<><span>Prioridade</span><b>🚨 URGENTE</b></>)}
@@ -753,4 +871,15 @@ function TrackPage({ settings, go }: any) {
       </main>
     </div>
   );
+}
+
+function normalize(o: any) {
+  return {
+    ...o,
+    payment: o.payment_method === "CARTAO" ? "Cartão" : o.payment_method === "PIX" ? "PIX" : "Dinheiro",
+    payFull: o.entry_pct === 1,
+    customer: o.customer_name,
+    delivery: o.delivery_mode === "RETIRADA" ? "Retirada" : "Entrega",
+    total: orderTotal(o)
+  };
 }
