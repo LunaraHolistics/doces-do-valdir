@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Produtos do Valdir — Offline</title>
+  <meta name="theme-color" content="#2f7659" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',system-ui,sans-serif;background:#fffaf1;color:#2f241f;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+    .box{max-width:360px}
+    h1{font-family:'Fraunces',Georgia,serif;font-size:26px;margin:16px 0 8px}
+    p{color:#66564e;line-height:1.5;margin:8px 0 24px}
+    .icon{width:80px;height:80px;border-radius:50%;background:#e2f0e7;display:grid;place-items:center;margin:0 auto}
+    button{background:#2f7659;color:#fff;border:0;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;font-size:14px;min-height:48px}
+    button:hover{background:#235842}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2f7659" stroke-width="2">
+        <line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+      </svg>
+    </div>
+    <h1>Sem conexão no momento</h1>
+    <p>Parece que você está offline. Quando a internet voltar, é só recarregar para continuar comprando na loja Produtos do Valdir.</p>
+    <button onclick="location.reload()">Tentar novamente</button>
+  </div>
+</body>
+</html>

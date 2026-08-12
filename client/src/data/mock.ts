@@ -1,5 +1,5 @@
 export const IMG = {
-  hero: "/manus-storage/hero-doces_8c4d1eff.jpg",
+  hero: "/hero.svg",
   logo: "/logo-valdir.png",
   doces: "/doces.svg",
   balas: "/balas.svg",

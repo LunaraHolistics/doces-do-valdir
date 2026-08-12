@@ -11,6 +11,8 @@ export function Logo({ small = false, onClick }: { small?: boolean; onClick?: ()
       <img
         src={IMG.logo}
         alt="Produtos do Valdir"
+        loading="eager"
+        decoding="async"
         style={small ? { ...LOGO_STYLE, height: 46, maxWidth: 74 } : { ...LOGO_STYLE, height: 58, maxWidth: 92 }}
       />
       <div>
@@ -24,15 +26,16 @@ export function Logo({ small = false, onClick }: { small?: boolean; onClick?: ()
     : <div className="brand">{inner}</div>;
 }
 
-export function Button({ children, onClick, variant = "primary", className = "", disabled = false }: {
+export function Button({ children, onClick, variant = "primary", className = "", disabled = false, type = "button" }: {
   children: React.ReactNode;
   onClick?: () => void;
   variant?: string;
   className?: string;
   disabled?: boolean;
+  type?: "button" | "submit" | "reset";
 }) {
   return (
-    <button disabled={disabled} onClick={onClick} className={`btn btn-${variant} ${className}`}>
+    <button type={type} disabled={disabled} onClick={onClick} className={`btn btn-${variant} ${className}`}>
       {children}
     </button>
   );
@@ -43,7 +46,8 @@ export function Header({ title, back, onBack, cart = 0, goCart, subtitle, onLogo
   goCart?: () => void; subtitle?: string; onLogo?: () => void;
 }) {
   return (
-    <header className="topbar">
+    <header className="topbar" role="banner">
+      <a href="#main-content" className="skip-link">Pular para o conteúdo principal</a>
       {back
         ? <button className="icon-btn" onClick={onBack} aria-label="Voltar"><ArrowLeft size={21} /></button>
         : <Logo small onClick={onLogo} />}
@@ -54,7 +58,7 @@ export function Header({ title, back, onBack, cart = 0, goCart, subtitle, onLogo
       {goCart
         ? <button className="cart-icon" onClick={goCart} aria-label="Abrir carrinho">
             <ShoppingCart size={21} />
-            {cart > 0 && <i>{cart}</i>}
+            {cart > 0 && <i aria-label={`${cart} itens`}>{cart}</i>}
           </button>
         : <span className="icon-btn" aria-hidden="true" />}
     </header>

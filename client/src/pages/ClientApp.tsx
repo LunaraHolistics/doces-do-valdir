@@ -109,7 +109,7 @@ export default function ClientApp() {
           goCart={() => go("cart")} onLogo={() => go("home")}
         />
         <main className="page">
-          <img className="product-hero" src={selected.image_url} />
+          <img className="product-hero" src={selected.image_url} loading="eager" decoding="async" alt={selected.name} />
           <div className="product-detail">
             <span className="eyebrow">{categories.find((c: any) => c.id === selected.category_id)?.name} · {selected.stock} disponíveis</span>
             <h1>{selected.name}</h1>
@@ -147,7 +147,7 @@ export default function ClientApp() {
               <div className="cart-list">
                 {cartItems.map(({ p, q }: any) => (
                   <div className="cart-row" key={p.id}>
-                    <img src={p.image_url} />
+                    <img src={p.image_url} loading="lazy" decoding="async" alt={p.name} />
                     <div>
                       <b>{p.name}</b>
                       <span>{moneyFromCents(p.price_cents)} cada</span>
@@ -299,9 +299,9 @@ export default function ClientApp() {
           <span>feito para adoçar seu dia</span>
           <h1>Escolha seus favoritos de hoje.</h1>
         </div>
-        <img src={IMG.hero} />
+        <img src={IMG.hero} loading="eager" decoding="async" alt="Produtos do Valdir" />
       </header>
-      <main className="page catalog-page">
+      <main className="page catalog-page" id="main-content">
         <div className="searchbox">
           <Search size={18} />
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar um doce, uma pilha..." />
@@ -326,7 +326,7 @@ export default function ClientApp() {
         </div>
         {products[0] && (
           <div className="featured" onClick={() => { setSelected(products[0]); go("product"); }}>
-            <img src={products[0].image_url} />
+            <img src={products[0].image_url} loading="eager" decoding="async" alt={products[0].name} />
             <div>
               <span className="tag">favorito da casa</span>
               <h2>{products[0].name}</h2>
@@ -344,7 +344,7 @@ export default function ClientApp() {
           {filtered.map((p: any) => (
             <article className="product-card" key={p.id} onClick={() => { setSelected(p); go("product"); }}>
               <div className="product-img">
-                <img src={p.image_url} />
+                <img src={p.image_url} loading="lazy" decoding="async" alt={p.name} />
                 {p.id === "p1" && <span className="tag">favorito da casa</span>}
               </div>
               <div className="product-info">
