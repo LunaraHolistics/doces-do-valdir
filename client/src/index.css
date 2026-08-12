@@ -139,3 +139,33 @@ html { scroll-behavior: smooth; }
     min-width: 44px;
   }
 }
+
+/* =========================================
+   Rodada 5 — hero "palmeirense": degradê verde→branco,
+   texto com contraste, logo maior e sem ilustração no topo
+   ========================================= */
+
+/* fundo novo: verde (esquerda) → branco (direita) */
+.client-hero{
+  height:auto;
+  min-height:232px;
+  background:linear-gradient(90deg,#14532d 0%,#1f6f4a 45%,#2f7659 62%,#f2f8f3 100%);
+  padding-bottom:36px;
+}
+.client-hero:after{display:none}
+
+/* some com a ilustração amarela do topo */
+.client-hero>img{display:none}
+
+/* logo maior na home */
+.client-hero .brand img{height:78px !important;max-width:136px !important}
+.client-hero .brand strong{color:#d9ecdf}
+.client-hero .brand b{color:#ffffff}
+
+/* texto do hero com contraste forte sobre o verde */
+.hero-copy{width:72%;margin-top:30px;background:transparent;padding:0}
+.hero-copy span{color:#cfe8d8}
+.hero-copy h1{color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+
+/* botão de conta visível sobre o degradê */
+.client-hero .account-btn{background:#ffffff;color:#1f6f4a}
