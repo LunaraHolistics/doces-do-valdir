@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase, hasSupabase } from "./supabase";
+import { money, orderLabel, orderName, orderTotal } from "./helpers";
 import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_ORDERS } from "../data/mock";
 
 export function useCatalog() {
@@ -51,6 +53,28 @@ export function useOrders() {
   };
 
   useEffect(() => { reload(); }, []);
+
+  // 🔔 tempo real: pedido novo aparece sozinho + sino
+  useEffect(() => {
+    if (!hasSupabase) return;
+    const channel = supabase
+      .channel("orders-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        (payload) => {
+          reload();
+          if (payload.eventType === "INSERT") {
+            const o: any = payload.new;
+            toast.success("🔔 Novo pedido recebido!", {
+              description: `${orderLabel(o)} · ${orderName(o)} · ${money(orderTotal(o))}`
+            });
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const patch = async (id: string, changes: any) => {
     if (hasSupabase) await supabase.from("orders").update(changes).eq("id", id);

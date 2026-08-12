@@ -3,18 +3,18 @@ import { toast } from "sonner";
 import {
   ArrowLeft, ArrowRight, Camera, Check, Copy, CreditCard, DollarSign, HeartHandshake,
   Home as HomeIcon, MapPin, Search, ShoppingCart, Store, Trash2, Truck, UserRound,
-  WalletCards, Zap, Image as ImageIcon, Pencil, Plus, X
+  WalletCards, Zap, Image as ImageIcon, Plus, X
 } from "lucide-react";
 import { supabase, hasSupabase } from "../lib/supabase";
 import { currentSession, onAuthChange, signInWithGoogle, signOut, ensureCustomer } from "../lib/auth";
 import { useCatalog, useSettings } from "../lib/hooks";
 import {
-  money, moneyFromCents, openWhatsApp, uploadToBucket, STATUS_SEQ, statusIdx,
-  orderTotal, orderEntry, orderBalance, orderLabel, dateBR
+  money, moneyFromCents, openWhatsApp, uploadToBucket, STATUS_SEQ,
+  orderTotal, orderLabel, dateBR
 } from "../lib/helpers";
 import { ALL_RP_DISTRICTS, RP_REGIONS, zoneForDistrict } from "../data/rpZones";
 import { Logo, Button, Header, Stepper, BottomNav, Empty, WhatsAppBtn } from "../ui/components";
-import { IMG, MOCK_HISTORY } from "../data/mock";
+import { IMG } from "../data/mock";
 
 export default function ClientApp() {
   const { products, categories, loading } = useCatalog();
@@ -110,6 +110,7 @@ export default function ClientApp() {
   );
 
   if (screen === "product" && selected) {
+    const catName = categories.find((c: any) => c.id === selected.category_id)?.name;
     return (
       <div className="app-shell">
         <Header
@@ -120,7 +121,7 @@ export default function ClientApp() {
         <main className="page">
           <img className="product-hero" src={selected.image_url} loading="eager" decoding="async" alt={selected.name} />
           <div className="product-detail">
-            <span className="eyebrow">{categories.find((c: any) => c.id === selected.category_id)?.name} · {selected.stock} disponíveis</span>
+            <span className="eyebrow">{catName} · {selected.stock > 0 ? `${selected.stock} disponíveis` : "sob encomenda"}</span>
             <h1>{selected.name}</h1>
             <p>{selected.description}</p>
             <strong className="price-lg">{moneyFromCents(selected.price_cents)}</strong>
@@ -248,7 +249,6 @@ export default function ClientApp() {
           <span>feito para adoçar seu dia</span>
           <h1>Escolha seus favoritos de hoje.</h1>
         </div>
-        <img src={IMG.hero} loading="eager" decoding="async" alt="Produtos do Valdir" />
       </header>
       <main className="page catalog-page" id="main-content">
         <div className="searchbox">
@@ -298,7 +298,9 @@ export default function ClientApp() {
               </div>
               <div className="product-info">
                 <h3>{p.name}</h3>
-                <span className="stock">{p.stock} disponíveis</span>
+                {p.stock > 0
+                  ? <span className="stock">{p.stock} disponíveis</span>
+                  : <span className="stock encomenda">sob encomenda</span>}
                 <strong>{moneyFromCents(p.price_cents)}</strong>
                 <div className="card-action" onClick={e => { e.stopPropagation(); add(p.id); toast.success(`${p.name} foi para o carrinho`); }}>
                   {(cart[p.id] || 0) > 0 ? (
@@ -318,13 +320,18 @@ export default function ClientApp() {
         <button className="link-btn" style={{ margin: "18px auto", display: "flex" }} onClick={() => go("track")}>
           Acompanhar pedido pelo código <ArrowRight size={15} />
         </button>
+        <div className="legal-links">
+          <a href="/privacidade">Política de Privacidade</a>
+          <span>·</span>
+          <a href="/termos">Termos de Uso</a>
+        </div>
       </main>
       {nav}
     </div>
   );
 }
 
-/* ============ CONTA (perfil + endereços + histórico) ============ */
+/* ============ CONTA ============ */
 function AccountPage({ uid, customer, setCustomer, myOrders, myAddresses, setMyAddresses, go, repeat }: any) {
   const [profile, setProfile] = useState<any>(null);
   const [newAddr, setNewAddr] = useState<any>({ place_name: "", street: "", number: "", district: "", region: "Centro" });
@@ -374,7 +381,6 @@ function AccountPage({ uid, customer, setCustomer, myOrders, myAddresses, setMyA
               <Check />
             </div>
 
-            {/* MEUS DADOS */}
             <div className="settings-card" style={{ marginBottom: 16 }}>
               <span className="eyebrow">meus dados</span>
               <h2 style={{ fontFamily: "Fraunces", fontSize: 20, margin: "4px 0 10px" }}>Preencha uma vez, use sempre</h2>
@@ -385,7 +391,6 @@ function AccountPage({ uid, customer, setCustomer, myOrders, myAddresses, setMyA
               <Button onClick={saveProfile}>Salvar meus dados <Check size={16} /></Button>
             </div>
 
-            {/* MEUS ENDEREÇOS */}
             <div className="settings-card" style={{ marginBottom: 16 }}>
               <span className="eyebrow">meus endereços</span>
               {myAddresses.map((a: any) => (
@@ -415,7 +420,6 @@ function AccountPage({ uid, customer, setCustomer, myOrders, myAddresses, setMyA
               <Button variant="soft" onClick={addAddress}><Plus size={16} /> Adicionar endereço</Button>
             </div>
 
-            {/* HISTÓRICO */}
             <div className="section-head">
               <h2>Seus pedidos</h2>
               <button className="link-btn" onClick={() => go("track")}>acompanhar por código <ArrowRight size={15} /></button>
@@ -478,6 +482,7 @@ function CheckoutPage({ cartItems, cartTotal, step, setStep, settings, customer,
   const [district, setDistrict] = useState("");
   const [region, setRegion] = useState("Zona Norte");
   const [submitting, setSubmitting] = useState(false);
+  const [previewNumber] = useState("DV-" + Math.floor(1000 + Math.random() * 9000));
 
   useEffect(() => {
     if (customer) {
@@ -498,7 +503,6 @@ function CheckoutPage({ cartItems, cartTotal, step, setStep, settings, customer,
   const entry = cartTotal * pct;
   const needsEntry = payment !== "Dinheiro" && !payFull;
   const amountToPay = needsEntry ? entry : cartTotal;
-  const orderNumber = "DV-" + Math.floor(1000 + Math.random() * 9000);
 
   const isAraraquara = city === "Araraquara";
   const addressLine = isAraraquara
@@ -521,7 +525,7 @@ function CheckoutPage({ cartItems, cartTotal, step, setStep, settings, customer,
     if (z) setRegion(z);
   };
 
-  const whatsMsg = `🧾 Pedido ${orderNumber} · Produtos do Valdir
+  const buildMsg = (orderNumber: string) => `🧾 Pedido ${orderNumber} · Produtos do Valdir
 Cliente: ${name || "Visitante"}
 ${business ? `Estabelecimento: ${business}\n` : ""}Telefone: ${phone || "não informado"}
 Cidade: ${city}
@@ -541,8 +545,16 @@ Recado: ${notes || "—"}`;
     try {
       let accessCode = null;
       let savedId = null;
+      let orderNumber = previewNumber;
+
       if (hasSupabase) {
+        try {
+          const { data: seq } = await supabase.rpc("next_order_number");
+          if (seq) orderNumber = seq;
+        } catch (e) { /* mantém número de prévia */ }
+
         const { data: order, error } = await supabase.from("orders").insert({
+          number: orderNumber,
           customer_id: customer?.id || null,
           customer_name: name || "Visitante",
           customer_phone: phone || "",
@@ -569,6 +581,8 @@ Recado: ${notes || "—"}`;
         if (itemsErr) throw itemsErr;
         await decrementStock(cartItems);
       }
+
+      const whatsMsg = buildMsg(orderNumber);
       if (!openWhatsApp(whatsNumber, whatsMsg)) {
         toast.success("Pedido enviado no WhatsApp (simulado)", { description: whatsMsg });
       }
@@ -730,7 +744,7 @@ Recado: ${notes || "—"}`;
             </div>
             <div className="pix-box">
               <span>mensagem que será enviada no WhatsApp</span>
-              <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 12 }}>{whatsMsg}</pre>
+              <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 12 }}>{buildMsg(previewNumber)}</pre>
             </div>
             <Button onClick={submitOrder} disabled={submitting}>
               {submitting ? "Enviando..." : "Enviar pedido no WhatsApp"} <ArrowRight size={17} />
@@ -742,6 +756,7 @@ Recado: ${notes || "—"}`;
   );
 }
 
+/* ============ STATUS / TRACK ============ */
 function StatusView({ order, setOrder, settings, go }: any) {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [proofFile, setProofFile] = useState<File | null>(null);

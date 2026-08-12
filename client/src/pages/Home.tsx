@@ -5,12 +5,12 @@ import { hasSupabase } from "../lib/supabase";
 import { currentSession, getRole, onAuthChange, signIn, signOut } from "../lib/auth";
 import { Logo, Button, LOGO_STYLE } from "../ui/components";
 import { IMG } from "../data/mock";
+import { PrivacyPage, TermsPage } from "./LegalPages";
 
 const ClientApp = lazy(() => import("./ClientApp"));
 const OperatorApp = lazy(() => import("./OperatorApp"));
 const ManagerApp = lazy(() => import("./ManagerApp"));
 
-// Captura o prompt de instalação do PWA (Android/Chrome/desktop)
 let installPrompt: any = null;
 if (typeof window !== "undefined") {
   window.addEventListener("beforeinstallprompt", (e: any) => {
@@ -43,6 +43,15 @@ function LoadingSkeleton() {
 
 export default function Home() {
   const initialPath = typeof window !== "undefined" ? window.location.pathname : "/";
+
+  // páginas legais (sem experiência/login)
+  if (initialPath.startsWith("/privacidade")) return <PrivacyPage />;
+  if (initialPath.startsWith("/termos")) return <TermsPage />;
+
+  return <AppRouter initialPath={initialPath} />;
+}
+
+function AppRouter({ initialPath }: { initialPath: string }) {
   const [experience, setExperience] = useState<"client" | "operator" | "manager">(
     initialPath.startsWith("/operacao") ? "operator" :
     initialPath.startsWith("/gestao") ? "manager" : "client"

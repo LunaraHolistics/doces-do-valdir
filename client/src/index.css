@@ -169,3 +169,26 @@ html { scroll-behavior: smooth; }
 
 /* botão de conta visível sobre o degradê */
 .client-hero .account-btn{background:#ffffff;color:#1f6f4a}
+
+/* =========================================
+   Lote 14 — sob encomenda, links legais e impressão PDF
+   ========================================= */
+.stock.encomenda{color:#aa7628;font-weight:700}
+.legal-links{display:flex;justify-content:center;gap:10px;margin:26px 0 10px;font-size:11px}
+.legal-links a{color:var(--muted);text-decoration:underline}
+.legal h2{font-family:'Fraunces',serif;font-size:19px;margin:18px 0 6px;color:var(--ink)}
+.legal p,.legal li{font-size:13px;color:var(--muted);line-height:1.65}
+.legal ul{padding-left:18px;margin:6px 0}
+
+/* relatório imprimível (salvar como PDF) */
+#print-report{display:none}
+@media print{
+  body *{visibility:hidden}
+  #print-report,#print-report *{visibility:visible}
+  #print-report{display:block;position:absolute;left:0;top:0;width:100%;padding:24px;background:#fff;color:#000}
+  #print-report h1{font-size:20px;margin:0 0 4px}
+  #print-report h2{font-size:14px;margin:14px 0 4px}
+  #print-report p{font-size:11px;margin:2px 0}
+  #print-report table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+  #print-report th,#print-report td{border:1px solid #bbb;padding:4px 6px;text-align:left}
+}
