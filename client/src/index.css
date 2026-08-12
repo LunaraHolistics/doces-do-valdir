@@ -192,3 +192,25 @@ html { scroll-behavior: smooth; }
   #print-report table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
   #print-report th,#print-report td{border:1px solid #bbb;padding:4px 6px;text-align:left}
 }
+/* =========================================
+   Rodada 6 — banner como vitrine da home;
+   selo como identidade (favicon/PWA/WhatsApp)
+   ========================================= */
+.client-hero{
+  background:var(--cream);
+  min-height:0;
+  padding:16px 18px 20px;
+}
+.client-hero:after{display:none}
+.client-hero>img{display:block}
+.hero-banner{
+  width:100%;
+  height:auto;
+  border-radius:18px;
+  margin-top:14px;
+  box-shadow:var(--shadow);
+}
+/* wordmark volta ao verde sobre o creme */
+.client-hero .brand strong{color:var(--muted)}
+.client-hero .brand b{color:var(--green)}
+.client-hero .account-btn{background:var(--green-soft);color:var(--green-dark)}
