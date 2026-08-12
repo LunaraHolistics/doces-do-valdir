@@ -726,7 +726,7 @@ export default function ManagerApp({
               Exportar PDF <BarChart3 size={16} />
             </Button>
             <p className="muted">
-              Na janela de impressão, escolha “Salvar como PDF”.
+              Na janela de impressão, escolha "Salvar como PDF".
             </p>
             <div className="report-card">
               <b>Mais vendidos (qtd)</b>
@@ -937,6 +937,32 @@ export default function ManagerApp({
             </Button>
           </div>
         )}
+
+        {/* Relatório imprimível (Exportar PDF) */}
+        <div id="print-report">
+          <h1>Produtos do Valdir — Relatório</h1>
+          <p>Gerado em {new Date().toLocaleDateString("pt-BR")} · todos os pedidos</p>
+          <h2>Vendas</h2>
+          <p>Pedidos: {orders.length} · Faturamento: {money(totalVendas)} · Lucro: {money(profit)} · Margem: {margin.toFixed(1)}%</p>
+          <h2>Mais vendidos</h2>
+          <table>
+            <thead><tr><th>Produto</th><th>Qtd</th><th>Lucro</th></tr></thead>
+            <tbody>
+              {topSold.map((t) => (
+                <tr key={t.name}><td>{t.name}</td><td>{t.qty}</td><td>{money(t.profit)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <h2>Estoque baixo (&lt; 10 un.)</h2>
+          <table>
+            <thead><tr><th>Produto</th><th>Estoque</th></tr></thead>
+            <tbody>
+              {prods.filter((p) => p.stock < 10 && p.active !== false).map((p) => (
+                <tr key={p.id}><td>{p.name}</td><td>{p.stock}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </main>
       <nav className="manager-nav">
         {items.map((i) => (
