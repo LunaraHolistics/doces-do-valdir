@@ -1,13 +1,45 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { hasSupabase } from "../lib/supabase";
 import { currentSession, getRole, onAuthChange, signIn, signOut } from "../lib/auth";
 import { Logo, Button, LOGO_STYLE } from "../ui/components";
 import { IMG } from "../data/mock";
-import ClientApp from "./ClientApp";
-import OperatorApp from "./OperatorApp";
-import ManagerApp from "./ManagerApp";
+
+const ClientApp = lazy(() => import("./ClientApp"));
+const OperatorApp = lazy(() => import("./OperatorApp"));
+const ManagerApp = lazy(() => import("./ManagerApp"));
+
+// Captura o prompt de instalação do PWA (Android/Chrome/desktop)
+let installPrompt: any = null;
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (e: any) => {
+    e.preventDefault();
+    installPrompt = e;
+  });
+}
+export const triggerInstall = async () => {
+  if (!installPrompt) return false;
+  installPrompt.prompt();
+  const { outcome } = await installPrompt.userChoice;
+  installPrompt = null;
+  return outcome === "accepted";
+};
+
+function LoadingSkeleton() {
+  return (
+    <div className="app-shell">
+      <div style={{ padding: 20 }}>
+        <div style={{ height: 56, background: "#f3e9dd", borderRadius: 10, marginBottom: 16, animation: "pulse 1.5s infinite" }} />
+        <div style={{ height: 200, background: "#f3e9dd", borderRadius: 18, marginBottom: 16, animation: "pulse 1.5s infinite" }} />
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} style={{ height: 80, background: "#f3e9dd", borderRadius: 14, marginBottom: 10, animation: "pulse 1.5s infinite", animationDelay: `${i * 0.1}s` }} />
+        ))}
+      </div>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }`}</style>
+    </div>
+  );
+}
 
 export default function Home() {
   const initialPath = typeof window !== "undefined" ? window.location.pathname : "/";
@@ -60,7 +92,11 @@ export default function Home() {
   };
 
   if (experience === "client") {
-    return <ClientApp />;
+    return (
+      <Suspense fallback={<LoadingSkeleton />}>
+        <ClientApp />
+      </Suspense>
+    );
   }
 
   if (!authReady) {
@@ -82,10 +118,18 @@ export default function Home() {
   }
 
   if (experience === "operator") {
-    return <OperatorApp screen={opScreen} setScreen={setOpScreen} onExit={leaveProtectedArea} onSignOut={signOutAndLeave} />;
+    return (
+      <Suspense fallback={<LoadingSkeleton />}>
+        <OperatorApp screen={opScreen} setScreen={setOpScreen} onExit={leaveProtectedArea} onSignOut={signOutAndLeave} />
+      </Suspense>
+    );
   }
 
-  return <ManagerApp tab={managerTab} setTab={setManagerTab} onSignOut={signOutAndLeave} />;
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <ManagerApp tab={managerTab} setTab={setManagerTab} onSignOut={signOutAndLeave} />
+    </Suspense>
+  );
 }
 
 function ProtectedEntry({ kind, onUnlock, onBack }: {
