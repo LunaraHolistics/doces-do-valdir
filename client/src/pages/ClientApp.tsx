@@ -64,7 +64,22 @@ export default function ClientApp() {
   const [selected, setSelected] = useState<any | null>(null);
   const [category, setCategory] = useState("Todos");
   const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const [cart, setCart] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem("pdv-cart");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("pdv-cart", JSON.stringify(cart));
+    } catch {
+      /* navegador sem armazenamento disponível */
+    }
+  }, [cart]);
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [orderDetails, setOrderDetails] = useState<any | null>(null);
   const [myOrders, setMyOrders] = useState<any[]>([]);
@@ -328,6 +343,7 @@ export default function ClientApp() {
         }
         onDone={(od: any) => {
           setOrderDetails(od);
+          setCart({});
           go("order");
         }}
         decrementStock={async (items: any[]) => {
@@ -550,7 +566,14 @@ function AccountPage({
   repeat,
 }: any) {
   const [profile, setProfile] = useState<any>(null);
-  const [newAddr, setNewAddr] = useState<any>({ place_name: "", street: "", number: "", district: "", region: "Centro", city: "Ribeirão Preto" });
+  const [newAddr, setNewAddr] = useState<any>({
+    place_name: "",
+    street: "",
+    number: "",
+    district: "",
+    region: "Centro",
+    city: "Ribeirão Preto",
+  });
 
   useEffect(() => {
     if (customer)
@@ -576,10 +599,24 @@ function AccountPage({
 
   const addAddress = async () => {
     if (!customer?.id) return;
-    if (newAddr.city !== "Araraquara" && !newAddr.street) { toast.error("Informe ao menos a rua."); return; }
-    const { data } = await supabase.from("addresses").insert({ ...newAddr, customer_id: customer.id }).select().single();
+    if (newAddr.city !== "Araraquara" && !newAddr.street) {
+      toast.error("Informe ao menos a rua.");
+      return;
+    }
+    const { data } = await supabase
+      .from("addresses")
+      .insert({ ...newAddr, customer_id: customer.id })
+      .select()
+      .single();
     if (data) setMyAddresses([data, ...myAddresses]);
-    setNewAddr({ place_name: "", street: "", number: "", district: "", region: "Centro", city: "Ribeirão Preto" });
+    setNewAddr({
+      place_name: "",
+      street: "",
+      number: "",
+      district: "",
+      region: "Centro",
+      city: "Ribeirão Preto",
+    });
     toast.success("Endereço salvo!");
   };
 
@@ -686,7 +723,9 @@ function AccountPage({
                   <div>
                     <b>{a.place_name || "Endereço"}</b>
                     <span>
-                      {a.city === "Araraquara" ? "Araraquara (encomenda)" : `${a.street}, ${a.number} · ${a.district} · ${a.region}`}
+                      {a.city === "Araraquara"
+                        ? "Araraquara (encomenda)"
+                        : `${a.street}, ${a.number} · ${a.district} · ${a.region}`}
                     </span>
                   </div>
                   <button
@@ -772,7 +811,10 @@ function AccountPage({
                 </>
               )}
               {newAddr.city === "Araraquara" && (
-                <p className="muted">Araraquara é atendida por encomenda programada — só a cidade já basta.</p>
+                <p className="muted">
+                  Araraquara é atendida por encomenda programada — só a cidade
+                  já basta.
+                </p>
               )}
               <Button variant="soft" onClick={addAddress}>
                 <Plus size={16} /> Adicionar endereço
@@ -1138,7 +1180,10 @@ Recado: ${notes || "—"}`;
                           <option value="">— digitar novo endereço —</option>
                           {addresses.map((a: any) => (
                             <option key={a.id} value={a.id}>
-                              {a.place_name || "Endereço"} · {a.city === "Araraquara" ? "Araraquara" : a.district}
+                              {a.place_name || "Endereço"} ·{" "}
+                              {a.city === "Araraquara"
+                                ? "Araraquara"
+                                : a.district}
                             </option>
                           ))}
                         </select>
