@@ -4,6 +4,9 @@ import { supabase, hasSupabase } from "./supabase";
 import { money, orderLabel, orderName, orderTotal } from "./helpers";
 import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_ORDERS } from "../data/mock";
 
+// Lista dos dias da semana (PT-BR)
+export const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
 export function useCatalog() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -54,7 +57,6 @@ export function useOrders() {
 
   useEffect(() => { reload(); }, []);
 
-  // 🔔 tempo real: pedido novo aparece sozinho + sino
   useEffect(() => {
     if (!hasSupabase) return;
     const channel = supabase
@@ -128,4 +130,48 @@ export function useSettings() {
   };
 
   return { settings, saveSettings };
+}
+
+// Agenda semanal de rotas do Valdir
+export function useSchedules() {
+  const [schedules, setSchedules] = useState<any[]>([]);
+
+  const reload = async () => {
+    if (!hasSupabase) { setSchedules([]); return; }
+    const { data } = await supabase
+      .from("delivery_schedules")
+      .select("*")
+      .eq("is_active", true)
+      .order("weekday")
+      .order("city");
+    setSchedules(data || []);
+  };
+
+  useEffect(() => { reload(); }, []);
+
+  useEffect(() => {
+    if (!hasSupabase) return;
+    const ch = supabase
+      .channel("schedules-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "delivery_schedules" }, () => reload())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const upsert = async (row: any) => {
+    if (!hasSupabase) return;
+    const { data } = await supabase.from("delivery_schedules").upsert(row).select().single();
+    if (data) setSchedules((s) => {
+      const i = s.findIndex((x) => x.id === data.id);
+      return i >= 0 ? s.map((x, idx) => (idx === i ? data : x)) : [...s, data];
+    });
+  };
+
+  const remove = async (id: string) => {
+    if (!hasSupabase) return;
+    await supabase.from("delivery_schedules").delete().eq("id", id);
+    setSchedules((s) => s.filter((x) => x.id !== id));
+  };
+
+  return { schedules, upsert, remove, reload };
 }

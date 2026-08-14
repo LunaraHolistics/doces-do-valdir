@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   BarChart3,
+  Calendar,
   Check,
   ClipboardList,
   ChevronRight,
@@ -22,7 +23,13 @@ import {
   Zap,
 } from "lucide-react";
 import { supabase, hasSupabase } from "../lib/supabase";
-import { useOrders, useProducts, useSettings } from "../lib/hooks";
+import {
+  useOrders,
+  useProducts,
+  useSettings,
+  useSchedules,
+  WEEKDAYS,
+} from "../lib/hooks";
 import {
   money,
   moneyFromCents,
@@ -37,6 +44,7 @@ import {
   CATNAMES,
   statusIdx,
 } from "../lib/helpers";
+import { RP_REGIONS, ORDERED_CITIES } from "../data/rpZones";
 import { Button, Header, Metric } from "../ui/components";
 import { IMG } from "../data/mock";
 import { triggerInstall } from "./Home";
@@ -52,6 +60,12 @@ export default function ManagerApp({
 }) {
   const { orders, patch } = useOrders();
   const { prods, patchProd, insertProd } = useProducts();
+  const { schedules, upsert, remove } = useSchedules();
+  const [schDraft, setSchDraft] = useState<any>({
+    weekday: 1,
+    city: "Ribeirão Preto",
+    region: "",
+  });
   const { settings, saveSettings } = useSettings();
   const [edit, setEdit] = useState<any | null>(null);
   const [editPhoto, setEditPhoto] = useState<{
@@ -108,6 +122,7 @@ export default function ManagerApp({
     { id: "clients", label: "Clientes", icon: <Users /> },
     { id: "reports", label: "Relatórios", icon: <BarChart3 /> },
     { id: "routes", label: "Rotas", icon: <Truck /> },
+    { id: "agenda", label: "Agenda", icon: <Calendar /> },
     { id: "araraquara", label: "Araraquara", icon: <MapPin /> },
     { id: "settings", label: "Configurações", icon: <Settings /> },
   ];
@@ -785,6 +800,153 @@ export default function ManagerApp({
           </>
         )}
 
+        {tab === "agenda" && (
+          <>
+            <div className="list-head">
+              <div>
+                <span className="eyebrow">rotas semanais</span>
+                <h1>Agenda do Valdir</h1>
+                <p>Dias em que o Valdir atende cada cidade/região.</p>
+              </div>
+            </div>
+
+            <div className="settings-card" style={{ marginBottom: 16 }}>
+              <span className="eyebrow">adicionar rota</span>
+              <div className="two-cols">
+                <label>
+                  Dia da semana
+                  <select
+                    value={schDraft.weekday}
+                    onChange={(e) =>
+                      setSchDraft({
+                        ...schDraft,
+                        weekday: parseInt(e.target.value),
+                      })
+                    }
+                  >
+                    {WEEKDAYS.map((d, i) => (
+                      <option key={i} value={i}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Cidade
+                  <select
+                    value={schDraft.city}
+                    onChange={(e) =>
+                      setSchDraft({ ...schDraft, city: e.target.value, region: "" })
+                    }
+                  >
+                    <option>Ribeirão Preto</option>
+                    {ORDERED_CITIES.filter((c) => c !== "Araraquara").map(
+                      (c) => (
+                        <option key={c}>{c}</option>
+                      ),
+                    )}
+                  </select>
+                </label>
+              </div>
+              {schDraft.city === "Ribeirão Preto" && (
+                <label>
+                  Zona (opcional — deixe vazio para atender RP inteira)
+                  <select
+                    value={schDraft.region}
+                    onChange={(e) =>
+                      setSchDraft({ ...schDraft, region: e.target.value })
+                    }
+                  >
+                    <option value="">Toda Ribeirão Preto</option>
+                    {RP_REGIONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {schDraft.city !== "Ribeirão Preto" && (
+                <p className="muted">
+                  Cidade inteira — o Valdir passa o dia todo por lá.
+                </p>
+              )}
+              <Button
+                onClick={async () => {
+                  await upsert({
+                    weekday: schDraft.weekday,
+                    city: schDraft.city,
+                    region: schDraft.region || null,
+                  });
+                  toast.success("Rota adicionada");
+                }}
+              >
+                <Plus size={16} /> Adicionar à agenda
+              </Button>
+            </div>
+
+            <div className="list-head">
+              <h2 style={{ fontSize: 20 }}>Rotas cadastradas</h2>
+            </div>
+            {schedules.length === 0 && (
+              <p className="muted">Nenhuma rota cadastrada ainda.</p>
+            )}
+            <div className="manager-list">
+              {schedules
+                .sort(
+                  (a, b) => a.weekday - b.weekday || a.city.localeCompare(b.city),
+                )
+                .map((s) => (
+                  <div className="manager-row" key={s.id}>
+                    <div
+                      className="mini-avatar"
+                      style={{ background: "#e2f0e7", color: "#235842" }}
+                    >
+                      {WEEKDAYS[s.weekday][0]}
+                    </div>
+                    <div>
+                      <b>{WEEKDAYS[s.weekday]}</b>
+                      <span>
+                        {s.city}
+                        {s.city === "Ribeirão Preto" && s.region
+                          ? ` · ${s.region}`
+                          : ""}
+                        {s.city === "Ribeirão Preto" && !s.region
+                          ? " (cidade inteira)"
+                          : ""}
+                      </span>
+                    </div>
+                    <button
+                      className="icon-btn"
+                      style={{ width: 32, height: 32, color: "#bd463b" }}
+                      onClick={async () => {
+                        if (
+                          window.confirm(
+                            `Remover ${WEEKDAYS[s.weekday]} — ${s.city}?`,
+                          )
+                        ) {
+                          await remove(s.id);
+                          toast.success("Rota removida");
+                        }
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+            </div>
+
+            <div className="notice" style={{ marginTop: 20 }}>
+              <MapPin />
+              <b>Araraquara é encomenda fixa</b>
+              <span>
+                Atendida fora da agenda do Valdir — a data é controlada em
+                Configurações.
+              </span>
+            </div>
+          </>
+        )}
+
         {tab === "araraquara" && (
           <div className="settings-card">
             <span className="eyebrow">encomendas</span>
@@ -940,26 +1102,52 @@ export default function ManagerApp({
 
         {/* Relatório imprimível (Exportar PDF) */}
         <div id="print-report">
-          <h1>Produtos do Valdir — Relatório</h1>
-          <p>Gerado em {new Date().toLocaleDateString("pt-BR")} · todos os pedidos</p>
+          <h1>Amado Armazém — Relatório</h1>
+          <p>
+            Gerado em {new Date().toLocaleDateString("pt-BR")} · todos os
+            pedidos
+          </p>
           <h2>Vendas</h2>
-          <p>Pedidos: {orders.length} · Faturamento: {money(totalVendas)} · Lucro: {money(profit)} · Margem: {margin.toFixed(1)}%</p>
+          <p>
+            Pedidos: {orders.length} · Faturamento: {money(totalVendas)} ·
+            Lucro: {money(profit)} · Margem: {margin.toFixed(1)}%
+          </p>
           <h2>Mais vendidos</h2>
           <table>
-            <thead><tr><th>Produto</th><th>Qtd</th><th>Lucro</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Qtd</th>
+                <th>Lucro</th>
+              </tr>
+            </thead>
             <tbody>
               {topSold.map((t) => (
-                <tr key={t.name}><td>{t.name}</td><td>{t.qty}</td><td>{money(t.profit)}</td></tr>
+                <tr key={t.name}>
+                  <td>{t.name}</td>
+                  <td>{t.qty}</td>
+                  <td>{money(t.profit)}</td>
+                </tr>
               ))}
             </tbody>
           </table>
           <h2>Estoque baixo (&lt; 10 un.)</h2>
           <table>
-            <thead><tr><th>Produto</th><th>Estoque</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Estoque</th>
+              </tr>
+            </thead>
             <tbody>
-              {prods.filter((p) => p.stock < 10 && p.active !== false).map((p) => (
-                <tr key={p.id}><td>{p.name}</td><td>{p.stock}</td></tr>
-              ))}
+              {prods
+                .filter((p) => p.stock < 10 && p.active !== false)
+                .map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.name}</td>
+                    <td>{p.stock}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

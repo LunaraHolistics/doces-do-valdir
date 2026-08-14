@@ -1,7 +1,7 @@
-# Direção visual — Produtos do Valdir
+# Direção visual — Amado Armazém
 
 ## Identidade oficial
-- Nome oficial: **Produtos do Valdir** (doces, balas, lanches e pequenas utilidades).
+- Nome oficial: **Amado Armazém** (doces, balas, lanches e pequenas utilidades).
 - Símbolo/favicon: arte do Valdir no carro (`client/public/logo-valdir.png`).
 - Wordmark: “Produtos do” pequeno + “Valdir” em destaque (Fraunces).
 - Não usar: “mercadinho”, “mercearia de bairro”, “Quitanda Solar”.

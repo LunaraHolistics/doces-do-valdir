@@ -8,7 +8,7 @@ export function PrivacyPage() {
       <Header title="Política de Privacidade" onLogo={home} />
       <main className="page legal">
         <h1 style={{ fontFamily: "Fraunces", fontSize: 26, margin: "8px 0" }}>Política de Privacidade</h1>
-        <p>Produtos do Valdir · Ribeirão Preto/SP · atualizada em agosto de 2026.</p>
+        <p>Amado Armazém · Ribeirão Preto/SP · atualizada em agosto de 2026.</p>
         <h2>1. Quais dados coletamos</h2>
         <ul>
           <li>Nome, WhatsApp e endereço informados no pedido ou no cadastro;</li>
@@ -44,7 +44,7 @@ export function TermsPage() {
       <Header title="Termos de Uso" onLogo={home} />
       <main className="page legal">
         <h1 style={{ fontFamily: "Fraunces", fontSize: 26, margin: "8px 0" }}>Termos de Uso</h1>
-        <p>Produtos do Valdir · Ribeirão Preto/SP · atualizada em agosto de 2026.</p>
+        <p>Amado Armazém · Ribeirão Preto/SP · atualizada em agosto de 2026.</p>
         <h2>1. Como funciona a loja</h2>
         <p>O site é um catálogo com pedidos entregues por região em Ribeirão Preto/SP e encomendas programadas para Araraquara/SP. Preços e estoque podem mudar sem aviso; o valor válido é o exibido no momento do pedido.</p>
         <h2>2. Pedidos e pagamento</h2>

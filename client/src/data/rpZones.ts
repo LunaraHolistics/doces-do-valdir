@@ -1,5 +1,4 @@
-// Mapa inicial de bairros de Ribeirão Preto → zona de entrega.
-// Ajuste as listas conforme a realidade das rotas do Valdir.
+// Mapa de bairros de Ribeirão Preto → zona de entrega
 export const RP_ZONES: Record<string, string[]> = {
   "Centro": ["Centro", "Cidade Alta", "Vila Seixas", "Jardim Mosteiro", "Boulevard", "Campos Elíseos", "Vila Amélia"],
   "Zona Norte": ["Ipiranga", "Vila Mariana", "Quintino Facci", "Parque Ribeirão Preto", "Adão do Carmo", "Heitor Rigoni", "Vila Elisa", "Jardim Paiva", "Alexandre Balbo", "Tanquinho"],
@@ -26,3 +25,25 @@ export function zoneForDistrict(d: string): string | null {
   }
   return null;
 }
+
+// Cidades atendidas por encomenda programada (além de Ribeirão Preto)
+export const ORDERED_CITIES = [
+  "Araraquara",
+  "Cravinhos",
+  "Bonfim Paulista",
+  "Jardinópolis",
+  "Serrana",
+  "Sertãozinho",
+  "Brodowski",
+  "Pontal",
+  "Pitangueiras",
+  "Guatapará",
+];
+
+// True se a cidade é atendida por encomenda (não tem rota direta)
+export function isOrderedCity(city: string): boolean {
+  return ORDERED_CITIES.includes(city);
+}
+
+// Todas as cidades disponíveis no sistema
+export const ALL_CITIES = ["Ribeirão Preto", ...ORDERED_CITIES];

@@ -31,7 +31,7 @@ import {
   signOut,
   ensureCustomer,
 } from "../lib/auth";
-import { useCatalog, useSettings } from "../lib/hooks";
+import { useCatalog, useSettings, useSchedules, WEEKDAYS } from "../lib/hooks";
 import {
   money,
   moneyFromCents,
@@ -42,7 +42,13 @@ import {
   orderLabel,
   dateBR,
 } from "../lib/helpers";
-import { ALL_RP_DISTRICTS, RP_REGIONS, zoneForDistrict } from "../data/rpZones";
+import {
+  ALL_RP_DISTRICTS,
+  RP_REGIONS,
+  zoneForDistrict,
+  ALL_CITIES,
+  isOrderedCity,
+} from "../data/rpZones";
 import {
   Button,
   Header,
@@ -80,6 +86,7 @@ export default function ClientApp() {
       /* navegador sem armazenamento disponível */
     }
   }, [cart]);
+
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [orderDetails, setOrderDetails] = useState<any | null>(null);
   const [myOrders, setMyOrders] = useState<any[]>([]);
@@ -415,7 +422,7 @@ export default function ClientApp() {
         <img
           className="hero-banner"
           src="/og-image.png"
-          alt="Produtos do Valdir — doces, balas e utilidades do balcão para sua casa"
+          alt="Amado Armazém — doces, balas e utilidades do balcão para sua casa"
         />
       </header>
       <main className="page catalog-page" id="main-content">
@@ -599,7 +606,7 @@ function AccountPage({
 
   const addAddress = async () => {
     if (!customer?.id) return;
-    if (newAddr.city !== "Araraquara" && !newAddr.street) {
+    if (!isOrderedCity(newAddr.city) && !newAddr.street) {
       toast.error("Informe ao menos a rua.");
       return;
     }
@@ -723,8 +730,8 @@ function AccountPage({
                   <div>
                     <b>{a.place_name || "Endereço"}</b>
                     <span>
-                      {a.city === "Araraquara"
-                        ? "Araraquara (encomenda)"
+                      {isOrderedCity(a.city)
+                        ? `${a.city} (encomenda)`
                         : `${a.street}, ${a.number} · ${a.district} · ${a.region}`}
                     </span>
                   </div>
@@ -755,11 +762,12 @@ function AccountPage({
                     setNewAddr({ ...newAddr, city: e.target.value })
                   }
                 >
-                  <option>Ribeirão Preto</option>
-                  <option>Araraquara</option>
+                  {ALL_CITIES.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
                 </select>
               </label>
-              {newAddr.city !== "Araraquara" && (
+              {!isOrderedCity(newAddr.city) && (
                 <>
                   <label>
                     Rua
@@ -810,9 +818,9 @@ function AccountPage({
                   </label>
                 </>
               )}
-              {newAddr.city === "Araraquara" && (
+              {isOrderedCity(newAddr.city) && (
                 <p className="muted">
-                  Araraquara é atendida por encomenda programada — só a cidade
+                  {newAddr.city} é atendida por encomenda programada — só a cidade
                   já basta.
                 </p>
               )}
@@ -934,6 +942,8 @@ function CheckoutPage({
     "DV-" + Math.floor(1000 + Math.random() * 9000),
   );
 
+  const { schedules } = useSchedules();
+
   useEffect(() => {
     if (customer) {
       setName(customer.name || "");
@@ -943,8 +953,8 @@ function CheckoutPage({
     }
   }, [customer]);
 
-  const pixKey = settings?.pix_key || "doces.valdir@demo.com";
-  const pixHolder = settings?.pix_holder || "Valdir";
+  const pixKey = settings?.pix_key || "valdirjamado@gmail.com";
+  const pixHolder = settings?.pix_holder || "Valdir Jose Amado";
   const pickupEnabled = !settings || settings.pickup_enabled !== false;
   const whatsNumber = settings?.whatsapp_number;
   const pct =
@@ -957,9 +967,9 @@ function CheckoutPage({
   const needsEntry = payment !== "Dinheiro" && !payFull;
   const amountToPay = needsEntry ? entry : cartTotal;
 
-  const isAraraquara = city === "Araraquara";
-  const addressLine = isAraraquara
-    ? "Encomenda — combinação de retirada/envio"
+  const isOrdered = isOrderedCity(city);
+  const addressLine = isOrdered
+    ? `Encomenda — combinação de retirada/envio (${city})`
     : delivery === "Retirada"
       ? "Retirada no balcão do Valdir"
       : `${addr || "Rua..."}, ${num || "s/n"} – ${district || "Centro"}`;
@@ -988,7 +998,7 @@ function CheckoutPage({
       )
       .join("\n");
     const endereco =
-      !isAraraquara && delivery === "Entrega"
+      !isOrdered && delivery === "Entrega"
         ? `🏠 *Local:* ${localName || "—"}\n📮 *Endereço:* ${addressLine}\n🗺️ *Região:* ${region}\n`
         : "";
     const pagamento =
@@ -1002,7 +1012,7 @@ ${div}
 👤 *Cliente:* ${name || "Visitante"}
 ${business ? `🏪 *Estabelecimento:* ${business}\n` : ""}📱 *WhatsApp:* ${phone || "não informado"}
 📍 *Cidade:* ${city}
-🚚 *Recebe:* ${isAraraquara ? "Encomenda Araraquara" : delivery}
+🚚 *Recebe:* ${isOrdered ? `Encomenda (${city})` : delivery}
 ${endereco}${div}
 🛒 *ITENS*
 ${itens}
@@ -1039,13 +1049,13 @@ ${div}
             business_name: business || "",
             notes: notes || "",
             city,
-            delivery_mode: isAraraquara
+            delivery_mode: isOrdered
               ? "ENCOMENDA"
               : delivery === "Retirada"
                 ? "RETIRADA"
                 : "ENTREGA",
             address_text: addressLine,
-            region: isAraraquara ? "Encomenda" : region,
+            region: isOrdered ? `Encomenda (${city})` : region,
             urgent,
             payment_method:
               payment === "Cartão" ? "CARTAO" : payment.toUpperCase(),
@@ -1075,7 +1085,7 @@ ${div}
 
       const whatsMsg = buildMsg(orderNumber);
       if (!openWhatsApp(whatsNumber, whatsMsg)) {
-        toast.success("Pedido enviado no WhatsApp (simulado)", {
+        toast.success("Pedido enviado no WhatsApp", {
           description: whatsMsg,
         });
       }
@@ -1144,20 +1154,37 @@ ${div}
             <label>
               Localização
               <select value={city} onChange={(e) => setCity(e.target.value)}>
-                <option>Ribeirão Preto</option>
-                <option>Araraquara</option>
+                {ALL_CITIES.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
               </select>
             </label>
 
-            {isAraraquara ? (
-              <div className="notice">
-                <MapPin />
-                <b>Encomenda para Araraquara</b>
-                <span>
-                  Próxima encomenda: <strong>{araraquaraDate}</strong>. Só a
-                  cidade já basta — o resto combinamos por WhatsApp.
-                </span>
-              </div>
+            {isOrdered ? (
+              city === "Araraquara" ? (
+                <div className="notice">
+                  <MapPin />
+                  <b>Encomenda para Araraquara</b>
+                  <span>
+                    Próxima encomenda: <strong>{araraquaraDate}</strong>. Só a
+                    cidade já basta — o resto combinamos por WhatsApp.
+                  </span>
+                </div>
+              ) : (
+                <div className="notice">
+                  <MapPin />
+                  <b>Rota para {city}</b>
+                  <span>
+                    {schedules.filter((s: any) => s.city === city).length > 0
+                      ? "Dias: " +
+                        schedules
+                          .filter((s: any) => s.city === city)
+                          .map((s: any) => WEEKDAYS[s.weekday])
+                          .join(" · ")
+                      : "Rota ainda não cadastrada — combinamos por WhatsApp."}
+                  </span>
+                </div>
+              )
             ) : (
               <>
                 <div className="choice-row">
@@ -1199,9 +1226,7 @@ ${div}
                           {addresses.map((a: any) => (
                             <option key={a.id} value={a.id}>
                               {a.place_name || "Endereço"} ·{" "}
-                              {a.city === "Araraquara"
-                                ? "Araraquara"
-                                : a.district}
+                              {isOrderedCity(a.city) ? a.city : a.district}
                             </option>
                           ))}
                         </select>
@@ -1258,6 +1283,23 @@ ${div}
                         ))}
                       </select>
                     </label>
+                    {(() => {
+                      const diasCity = schedules
+                        .filter(
+                          (s: any) =>
+                            s.city === "Ribeirão Preto" &&
+                            (!s.region || s.region === region),
+                        )
+                        .map((s: any) => WEEKDAYS[s.weekday]);
+                      if (diasCity.length === 0) return null;
+                      return (
+                        <div className="notice" style={{ margin: "12px 0" }}>
+                          <Truck />
+                          <b>Próximas entregas na sua região</b>
+                          <span>{diasCity.join(" · ")}</span>
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
 
@@ -1438,8 +1480,8 @@ ${div}
               )}
               <span>Recebe</span>
               <b>
-                {isAraraquara
-                  ? "Encomenda Araraquara"
+                {isOrdered
+                  ? `Encomenda (${city})`
                   : `${delivery} · ${region}`}
               </b>
               <span>Endereço</span>

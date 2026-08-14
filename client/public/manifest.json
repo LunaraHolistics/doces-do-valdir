@@ -1,12 +1,12 @@
 {
-  "name": "Produtos do Valdir",
+  "name": "Amado Armazém",
   "short_name": "Valdir",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fffaf1",
   "theme_color": "#2f7659",
-  "description": "Catálogo e pedidos da loja Produtos do Valdir. Doces e utilidades com entrega por região.",
+  "description": "Catálogo e pedidos da loja Amado Armazém. Doces e utilidades com entrega por região.",
   "categories": ["food", "shopping", "utilities"],
   "lang": "pt-BR",
   "icons": [

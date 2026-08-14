@@ -1,5 +1,5 @@
 -- =====================================================
--- PRODUTOS DO VALDIR — schema inicial (Supabase)
+-- Amado Armazém — schema inicial (Supabase)
 -- Rodar no SQL Editor (como postgres) ou via integração de branch.
 -- =====================================================
 
