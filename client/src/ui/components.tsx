@@ -16,8 +16,8 @@ export function Logo({ small = false, onClick }: { small?: boolean; onClick?: ()
         style={small ? { ...LOGO_STYLE, height: 46, maxWidth: 74 } : { ...LOGO_STYLE, height: 58, maxWidth: 92 }}
       />
       <div>
-        <strong>Produtos do</strong>
-        <b>Valdir</b>
+        <strong>Amado</strong>
+        <b>Armazém</b>
       </div>
     </>
   );
