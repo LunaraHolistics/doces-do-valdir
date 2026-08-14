@@ -979,22 +979,40 @@ function CheckoutPage({
     if (z) setRegion(z);
   };
 
-  const buildMsg = (
-    orderNumber: string,
-  ) => `🧾 Pedido ${orderNumber} · Produtos do Valdir
-Cliente: ${name || "Visitante"}
-${business ? `Estabelecimento: ${business}\n` : ""}Telefone: ${phone || "não informado"}
-Cidade: ${city}
-Modalidade: ${isAraraquara ? "Encomenda" : delivery}
-Local: ${localName || "—"}
-Endereço: ${addressLine}
-${!isAraraquara && delivery === "Entrega" ? `Região: ${region}\n` : ""}Itens:
-${cartItems.map(({ p, q }: any) => `• ${q}x ${p.name} — ${money((p.price_cents * q) / 100)}`).join("\n")}
-Total: ${money(cartTotal)}
-Pagamento: ${payment}
-Valor a pagar: ${money(amountToPay)} (${payFull && payment !== "Dinheiro" ? "integral" : needsEntry ? `entrada ${Math.round(pct * 100)}%` : "total na entrega/retirada"})
-${needsEntry ? `Saldo: ${money(cartTotal - entry)}` : ""}Urgente: ${urgent ? "🚨 SIM — o quanto antes" : "não"}
-Recado: ${notes || "—"}`;
+  const buildMsg = (orderNumber: string) => {
+    const div = "━━━━━━━━━━━━━━";
+    const itens = cartItems
+      .map(
+        ({ p, q }: any) =>
+          `▪️ ${q}x ${p.name} — ${money((p.price_cents * q) / 100)}`,
+      )
+      .join("\n");
+    const endereco =
+      !isAraraquara && delivery === "Entrega"
+        ? `🏠 *Local:* ${localName || "—"}\n📮 *Endereço:* ${addressLine}\n🗺️ *Região:* ${region}\n`
+        : "";
+    const pagamento =
+      payment === "Dinheiro"
+        ? `Forma: *Dinheiro*\nPagamento total na entrega/retirada\nTotal: *${money(cartTotal)}*`
+        : payFull
+          ? `Forma: *${payment}*\nPagamento INTEGRAL agora: *${money(amountToPay)}*\nTotal: *${money(cartTotal)}*`
+          : `Forma: *${payment}*\nEntrada (${Math.round(pct * 100)}%) agora: *${money(amountToPay)}*\nSaldo na entrega: *${money(cartTotal - entry)}*\nTotal: *${money(cartTotal)}*`;
+    return `🧾 *NOVO PEDIDO ${orderNumber}*
+${div}
+👤 *Cliente:* ${name || "Visitante"}
+${business ? `🏪 *Estabelecimento:* ${business}\n` : ""}📱 *WhatsApp:* ${phone || "não informado"}
+📍 *Cidade:* ${city}
+🚚 *Recebe:* ${isAraraquara ? "Encomenda Araraquara" : delivery}
+${endereco}${div}
+🛒 *ITENS*
+${itens}
+${div}
+💰 *PAGAMENTO*
+${pagamento}
+${div}
+⏱️ *Urgência:* ${urgent ? "🚨 URGENTE — o quanto antes" : "normal (rota da região)"}
+📝 *Recado:* ${notes || "—"}`;
+  };
 
   const submitOrder = async () => {
     setSubmitting(true);
