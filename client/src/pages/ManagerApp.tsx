@@ -1102,7 +1102,7 @@ export default function ManagerApp({
 
         {/* Relatório imprimível (Exportar PDF) */}
         <div id="print-report">
-          <h1>Amado Armazém — Relatório</h1>
+          <h1>Depósito Amado — Relatório</h1>
           <p>
             Gerado em {new Date().toLocaleDateString("pt-BR")} · todos os
             pedidos

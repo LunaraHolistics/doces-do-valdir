@@ -422,7 +422,7 @@ export default function ClientApp() {
         <img
           className="hero-banner"
           src="/og-image.png"
-          alt="Amado Armazém — doces, balas e utilidades do balcão para sua casa"
+          alt="Depósito Amado — doces, balas e utilidades do balcão para sua casa"
         />
       </header>
       <main className="page catalog-page" id="main-content">

@@ -1,5 +1,5 @@
 -- =====================================================
--- Amado Armazém — schema inicial (Supabase)
+-- Depósito Amado — schema inicial (Supabase)
 -- Rodar no SQL Editor (como postgres) ou via integração de branch.
 -- =====================================================
 

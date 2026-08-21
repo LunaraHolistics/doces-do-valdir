@@ -10,7 +10,7 @@ export function Logo({ small = false, onClick }: { small?: boolean; onClick?: ()
     <>
       <img
         src={IMG.logo}
-        alt="Amado Armazém"
+        alt="Depósito Amado"
         loading="eager"
         decoding="async"
         style={small ? { ...LOGO_STYLE, height: 46, maxWidth: 74 } : { ...LOGO_STYLE, height: 58, maxWidth: 92 }}

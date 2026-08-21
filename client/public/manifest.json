@@ -1,12 +1,12 @@
 {
-  "name": "Amado Armazém",
+  "name": "Depósito Amado",
   "short_name": "Valdir",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fffaf1",
   "theme_color": "#2f7659",
-  "description": "Catálogo e pedidos da loja Amado Armazém. Doces e utilidades com entrega por região.",
+  "description": "Catálogo e pedidos da loja Depósito Amado. Doces e utilidades com entrega por região.",
   "categories": ["food", "shopping", "utilities"],
   "lang": "pt-BR",
   "icons": [

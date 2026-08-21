@@ -176,7 +176,7 @@ function ProtectedEntry({ kind, onUnlock, onBack }: {
   return (
     <div className={`app-shell protected-entry ${manager ? "manager-entry" : "operator-entry"}`}>
       <div className="protected-mark">
-        <img src={IMG.logo} alt="Amado Armazém" style={{ ...LOGO_STYLE, height: 56, maxWidth: 86 }} />
+        <img src={IMG.logo} alt="Depósito Amado" style={{ ...LOGO_STYLE, height: 56, maxWidth: 86 }} />
         <span>{manager ? "central do gestor" : "operação da loja"}</span>
       </div>
       <main className="page">
@@ -184,7 +184,7 @@ function ProtectedEntry({ kind, onUnlock, onBack }: {
         <h1>{manager ? "Olá, gestor." : "Olá, Valdir e família."}</h1>
         <p>
           {manager
-            ? "Entre para acompanhar o movimento completo da loja Amado Armazém."
+            ? "Entre para acompanhar o movimento completo da loja Depósito Amado."
             : "Este espaço reúne os pedidos, produtos e entregas do dia."}
         </p>
         <label>

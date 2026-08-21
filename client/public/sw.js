@@ -1,4 +1,4 @@
-/* Amado Armazém — service worker v3 (network-first + offline page). */
+/* Depósito Amado — service worker v3 (network-first + offline page). */
 const CACHE = "pdv-v3";
 const CORE = ["/", "/manifest.json", "/logo-valdir.png", "/favicon.svg", "/offline.html"];
 
